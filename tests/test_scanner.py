@@ -111,6 +111,7 @@ def test_select_symbols_futures_keeps_only_crypto_perpetuals():
 class FakeClient:
     def __init__(self, market, exchange_info, klines, tickers=None, errors=None, tags=None):
         self.market = market
+        self.base_url = market.base_url
         self._info = exchange_info
         self._klines = klines
         self._tickers = tickers or []
@@ -467,3 +468,73 @@ def test_cli_servir_outside_codespaces(monkeypatch, tmp_path, opened):
     assert cli.main(["--html", str(tmp_path / "g.html"), "--servir", "--puerto", "9100"]) == 0
     assert served == [(9100, True)]
     assert opened == []
+
+
+class StatusResponse:
+    def __init__(self, status, payload=None):
+        self.status_code = status
+        self._payload = payload
+        self.headers = {}
+        self.text = ""
+
+    def json(self):
+        return self._payload
+
+
+def test_spot_falls_back_to_data_api_on_451(monkeypatch):
+    from momento_b.binance import BinanceClient
+
+    client = BinanceClient(SPOT)
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(url)
+        return StatusResponse(451) if url.startswith("https://api.binance.com") else StatusResponse(200, {"ok": 1})
+
+    monkeypatch.setattr(client.session, "get", fake_get)
+    assert client._get("/api/v3/ping") == {"ok": 1}
+    assert calls == ["https://api.binance.com/api/v3/ping", "https://data-api.binance.vision/api/v3/ping"]
+    assert client.base_url == "https://data-api.binance.vision"
+
+
+def test_futures_and_explicit_urls_do_not_fall_back(monkeypatch):
+    from momento_b.binance import BinanceClient
+
+    for client in (BinanceClient(FUTURES), BinanceClient(SPOT, base_url="https://api.binance.com")):
+        monkeypatch.setattr(client.session, "get", lambda url, params=None, timeout=None: StatusResponse(451))
+        with pytest.raises(BinanceFatalError):
+            client._get("/x")
+
+
+def test_web_app_has_no_data_and_scan_form():
+    from momento_b import web
+
+    html = web.render_app()
+    assert embedded_payload(html) is None
+    assert 'id="scan-form"' in html
+
+
+def test_committed_web_page_is_up_to_date():
+    from pathlib import Path
+
+    from momento_b import web
+
+    page = Path(__file__).resolve().parents[1] / "docs" / "index.html"
+    assert page.read_text(encoding="utf-8") == web.render_app(), "regenera con: python -m momento_b.web docs"
+
+
+def test_stock_symbols_lists_bstocks():
+    from momento_b import web
+
+    class Client:
+        def asset_tags(self):
+            return {"TSLABUSDT": ["bStocks"], "BTCUSDT": ["pow"], "NVDABUSDT": ["bStocks"]}
+
+    assert web.stock_symbols(Client()) == ["NVDABUSDT", "TSLABUSDT"]
+
+    class Down:
+        def asset_tags(self):
+            return None
+
+    with pytest.raises(RuntimeError):
+        web.stock_symbols(Down())

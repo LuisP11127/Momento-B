@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Momento-B Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -155,7 +160,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   .viewer-title .sym { font-size: 23px; }
 }
 </style>
-<!--BODY-->
+</head>
+<body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
@@ -262,7 +268,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   <p class="hint">Rueda del ratón o pellizco para acercar y alejar · arrastra para moverte en el tiempo · ← → cambia de moneda · Esc cierra · el punto marca las temporalidades donde también se cumple la condición</p>
 </div>
 
-<script id="momento-data" type="application/json">__MOMENTO_DATA__</script>
+<script id="momento-data" type="application/json">null</script>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 (() => {
@@ -1059,3 +1065,5 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   }
 })();
 </script>
+</body>
+</html>
