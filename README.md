@@ -46,6 +46,38 @@ y la carpeta de salida `site`.
 Tras cambiar la plantilla de la página, regenera la web con
 `python -m momento_b.web docs`.
 
+### Seguimiento
+
+Cada escaneo de la web (con **Guardar en seguimiento** marcado) guarda las monedas
+encontradas, con su precio en ese momento, en un apartado **«Seguimiento 1 de
+octubre»**, **«Seguimiento 2 de octubre»**… Si escaneas varias veces el mismo día,
+se añaden las monedas nuevas y cada una conserva el primer precio del día.
+
+En la pestaña **Seguimiento** de la web:
+
+- un apartado por día (el más reciente abierto) con el precio de entonces, el
+  precio actual y la variación, y un resumen: media, cuántas suben y bajan, la
+  mejor y la peor. Los precios se piden a Binance desde tu navegador (spot y
+  futuros) y se actualizan cada minuto;
+- filtros **Todos / Spot / Futuros / No repetidas** y orden por subida, bajada,
+  moneda u orden del escaneo;
+- al pulsar una moneda se abre su gráfico (1D por defecto) con una línea en el
+  precio del seguimiento y una flecha en la vela de ese día;
+- **Borrar** quita un día.
+
+**Dónde se guarda.** Siempre en el navegador donde escaneas. Para tenerlo también
+en el repositorio, y verlo igual en el móvil y en el ordenador, pulsa **Guardar
+también en GitHub** y pega una clave de GitHub (*fine-grained token*) creada en
+<https://github.com/settings/personal-access-tokens/new> con:
+
+- **Repository access → Only select repositories →** este repositorio;
+- **Permissions → Repository permissions → Contents → Read and write**.
+
+La clave se guarda solo en ese navegador y solo se envía a GitHub. Cada día queda
+como un archivo `docs/seguimiento/AAAA-MM-DD.json`, y el workflow `Web` los une en
+`seguimiento.json` al publicar la página (en otros dispositivos aparece en un
+minuto). Lo que escaneas sin conexión con GitHub se sube al conectarlo.
+
 ## Instalación
 
 Requiere Python 3.10 o superior.

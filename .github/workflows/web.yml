@@ -1,6 +1,7 @@
 name: Web
 
-# Publica la versión web (docs/ → GitHub Pages) con la lista de acciones tokenizadas al día.
+# Publica la versión web (docs/ → GitHub Pages) con la lista de acciones tokenizadas al día y
+# todos los días de seguimiento (docs/seguimiento/*.json, los guarda la propia web) en seguimiento.json.
 # Solo despliega si GitHub Pages está activado con «Source: GitHub Actions».
 on:
   push:
@@ -50,7 +51,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python -m momento_b.web site --bstocks
+      - run: python -m momento_b.web site --bstocks --seguimiento docs/seguimiento
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+    paths-ignore: ["docs/seguimiento/**"]  # los guardados del seguimiento no cambian el código
   workflow_dispatch:
     inputs:
       mercado:
@@ -33,6 +34,19 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest -q
+      # La página guarda en el navegador la clave de GitHub del seguimiento: la librería de gráficos
+      # se carga con una huella (SRI) y aquí se comprueba que coincide con el archivo del CDN.
+      - name: Comprobar la huella de la librería de gráficos
+        run: |
+          python - <<'PY'
+          import base64, hashlib, re, urllib.request
+          html = open("momento_b/report_template.html", encoding="utf-8").read()
+          src, integrity = re.search(r'<script src="(https://[^"]+)" integrity="([^"]+)"', html).groups()
+          data = urllib.request.urlopen(src, timeout=60).read()
+          digest = "sha384-" + base64.b64encode(hashlib.sha384(data).digest()).decode()
+          print(src, digest)
+          assert digest == integrity, f"la huella no coincide: {digest} != {integrity}"
+          PY
 
   scan:
     needs: tests

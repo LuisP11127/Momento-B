@@ -124,7 +124,67 @@ input[type="search"] { width: 13rem; max-width: 100%; }
 .card-foot { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; color: var(--muted); }
 .card-foot b { font: 500 13px var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
 
-.empty { margin: 24px 0; padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
+body.tracking .scan-only { display: none !important; }
+.seg.views { align-self: center; }
+.seg.views button { font-size: 15px; padding: 6px 14px; }
+.scan .check { gap: 6px; color: var(--fg); cursor: pointer; }
+.scan .check input { width: 16px; height: 16px; accent-color: var(--fg); margin: 0; }
+.track { display: grid; gap: 14px; }
+.track-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.track-bar label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.sync { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13.5px; color: var(--muted); }
+.sync b { color: var(--fg); font-weight: 600; }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.btn.danger { border-color: var(--down); color: var(--down); }
+.gh { display: grid; gap: 10px; max-width: 46rem; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.gh h3 { margin: 0; font: 600 19px/1.2 var(--font-display); }
+.gh ol { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; font-size: 14px; }
+.gh a { color: var(--accent); }
+.gh label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.gh input { padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; color: var(--fg); font-family: var(--font-mono); min-width: 0; }
+.gh-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.gh-note, .gh-msg { margin: 0; font-size: 12.5px; color: var(--muted); }
+.days { display: grid; gap: 12px; }
+.day { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.day-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 12px 14px; }
+.day-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--fg); cursor: pointer; text-align: left; }
+.day-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.day-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
+.day-toggle h2 { margin: 0; font: 600 21px/1.15 var(--font-display); letter-spacing: 0.01em; text-wrap: balance; }
+.day-stats { display: flex; flex-wrap: wrap; gap: 3px 14px; font-size: 13px; color: var(--muted); }
+.day-stats b { font: 500 13px var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
+.day-stats b.up { color: var(--up); }
+.day-stats b.down { color: var(--down); }
+.day-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.day-actions .confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.day-body { border-top: 1px solid var(--line); overflow-x: auto; }
+.coins { width: 100%; border-collapse: collapse; font-size: 14px; }
+.coins th { text-align: left; font: 600 11px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); padding: 9px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.coins td { padding: 8px 14px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+.coins tbody tr:last-child td { border-bottom: 0; }
+.coins tbody tr { cursor: pointer; }
+.coins tbody tr:hover td, .coins tbody tr:focus-visible td { background: var(--sunken); }
+.coins tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.coins .r { text-align: right; }
+.coins .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.coins .coin { font: 600 15px var(--font-display); letter-spacing: 0.01em; }
+.coins .coin small { font-size: 0.78em; color: var(--muted); margin-right: 8px; }
+.coins .muted { color: var(--muted); font-size: 13px; }
+.chgbar { display: inline-block; position: relative; width: 52px; height: 6px; margin-left: 10px; vertical-align: middle; background: var(--grid); border-radius: 3px; overflow: hidden; }
+.chgbar i { position: absolute; top: 0; bottom: 0; left: 0; background: currentColor; border-radius: 3px; }
+/* En el móvil cada moneda ocupa dos líneas: moneda y variación arriba, precio entonces y ahora debajo. */
+@media (max-width: 640px) {
+  .coins thead, .coins .col-scan, .chgbar { display: none; }
+  .coins tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "coin pct" "then now"; gap: 2px 12px; padding: 9px 12px; border-bottom: 1px solid var(--grid); }
+  .coins tbody tr:last-child { border-bottom: 0; }
+  .coins td { padding: 0; border: 0; }
+  .coins .c-coin { grid-area: coin; }
+  .coins .c-pct { grid-area: pct; font-weight: 500; }
+  .coins .c-then { grid-area: then; text-align: left; font-size: 12.5px; }
+  .coins .c-now { grid-area: now; font-size: 12.5px; }
+  .coins .c-then::before, .coins .c-now::before { content: attr(data-label) " "; color: var(--muted); font-family: var(--font-body); }
+}
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
 .foot { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; }
 .foot a { color: inherit; }
 
@@ -162,15 +222,19 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       <h1>Momento-B</h1>
       <p class="cond" id="cond"></p>
     </div>
-    <dl class="meta" id="meta"></dl>
-    <button class="btn" id="load" type="button">
+    <nav class="seg views" id="views" aria-label="Secciones">
+      <button type="button" data-view="scan" aria-pressed="true">Escáner</button>
+      <button type="button" data-view="track" aria-pressed="false">Seguimiento</button>
+    </nav>
+    <dl class="meta scan-only" id="meta"></dl>
+    <button class="btn scan-only" id="load" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 15v4h14v-4"/></svg>
       Cargar informe
     </button>
     <input id="file" type="file" accept=".html,.htm,.json,application/json,text/html" hidden>
   </header>
 
-  <form class="scan" id="scan-form" autocomplete="off">
+  <form class="scan scan-only" id="scan-form" autocomplete="off">
     <label>Mercado
       <select id="scan-market">
         <option value="ambos">Spot y futuros</option>
@@ -188,12 +252,13 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     <label>Vol. mín. 24h
       <input id="scan-minvol" type="number" min="0" step="100000" value="0" inputmode="numeric" aria-label="Volumen mínimo en 24 horas, en USDT"> USDT
     </label>
+    <label class="check"><input id="scan-track" type="checkbox" checked> Guardar en seguimiento</label>
     <button class="btn primary" id="scan-go" type="submit">Escanear</button>
     <span class="scan-status" id="scan-status" aria-live="polite"></span>
   </form>
-  <p class="notice" id="notice" hidden></p>
+  <p class="notice scan-only" id="notice" hidden></p>
 
-  <div class="toolbar" id="toolbar">
+  <div class="toolbar scan-only" id="toolbar">
     <div class="seg" id="market" role="group" aria-label="Mercado"></div>
     <label>Orden
       <select id="sort">
@@ -218,8 +283,48 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     </span>
   </div>
 
-  <main class="grid size-m" id="grid" aria-live="polite"></main>
-  <p class="empty" id="empty" hidden></p>
+  <main class="grid scan-only size-m" id="grid" aria-live="polite"></main>
+  <p class="empty scan-only" id="empty" hidden></p>
+
+  <section class="track" id="view-track" aria-label="Seguimiento" hidden>
+    <div class="track-bar">
+      <div class="seg" id="track-market" role="group" aria-label="Mercado"></div>
+      <label>Orden
+        <select id="track-sort">
+          <option value="subida">Mayor subida</option>
+          <option value="bajada">Mayor bajada</option>
+          <option value="moneda">Moneda</option>
+          <option value="escaneo">Orden del escaneo</option>
+        </select>
+      </label>
+      <button class="btn" id="track-refresh" type="button">Actualizar precios</button>
+      <span class="scan-status" id="track-status" aria-live="polite"></span>
+    </div>
+    <div class="sync" id="track-sync"></div>
+    <form class="gh" id="gh-form" autocomplete="off" hidden>
+      <h3>Guardar el seguimiento en GitHub</h3>
+      <ol>
+        <li>Abre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">crear una clave (fine-grained token)</a> en GitHub.</li>
+        <li>Ponle un nombre (por ejemplo, <b>Momento-B</b>). En <b>Repository access</b> elige <b>Only select repositories</b> y tu repositorio.</li>
+        <li>En <b>Permissions → Repository permissions → Contents</b> elige <b>Read and write</b>.</li>
+        <li>Pulsa <b>Generate token</b>, copia la clave y pégala aquí.</li>
+      </ol>
+      <label>Repositorio
+        <input id="gh-repo" placeholder="usuario/repositorio" spellcheck="false">
+      </label>
+      <label>Clave
+        <input id="gh-token" type="password" placeholder="github_pat_…" spellcheck="false">
+      </label>
+      <div class="gh-actions">
+        <button class="btn primary" type="submit">Conectar</button>
+        <button class="btn" id="gh-cancel" type="button">Cancelar</button>
+        <p class="gh-msg" id="gh-msg" aria-live="polite"></p>
+      </div>
+      <p class="gh-note">La clave se guarda solo en este navegador y solo se envía a GitHub. Cada día de seguimiento queda como un archivo en <code>docs/seguimiento/</code> del repositorio.</p>
+    </form>
+    <p class="notice" id="track-notice" hidden></p>
+    <div class="days" id="track-days"></div>
+  </section>
 
   <footer class="foot">
     <span>Datos: API pública de Binance.</span>
@@ -263,14 +368,14 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
 </div>
 
 <script id="momento-data" type="application/json">__MOMENTO_DATA__</script>
-<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js" integrity="sha384-stKllnUqA9AD0gsKCuUtf5XlqAW7PwIgDagoNsTWkjkBmJ/GZ/uHTgEBxdLV2VSK" crossorigin="anonymous"></script>
 <script>
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
   const MARKET_NAMES = { spot: "Spot", futures: "Futuros" };
   const SIZES = { s: 90, m: 120, l: 160 };  // velas visibles en cada mini-gráfico
-  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null, freshSince: 0 };
+  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null, freshSince: 0, trackSaved: null };
   const minis = new Map();  // elemento .mini -> entrada de gráfico
   let big = null;
   let lastFocus = null;
@@ -319,7 +424,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const cs = getComputedStyle(document.documentElement);
     const g = (n) => cs.getPropertyValue(n).trim();
     return { panel: g("--panel"), grid: g("--grid"), line: g("--line"), fg: g("--fg"), muted: g("--muted"),
-      up: g("--up"), down: g("--down"), ma: [g("--ma-fast"), g("--ma-mid"), g("--ma-slow")], mono: g("--font-mono") };
+      up: g("--up"), down: g("--down"), ma: [g("--ma-fast"), g("--ma-mid"), g("--ma-slow")], mono: g("--font-mono"), accent: g("--accent") };
   }
   function binanceUrl(it) {
     return it.mercado === "futures"
@@ -584,6 +689,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       const alpha = (c) => c + (c.startsWith("#") && c.length === 7 ? "66" : "");
       entry.volume.setData(seriesData(entry.item, entry.tf).volume.map((v) => ({ time: v.time, value: v.value, color: alpha(v.up ? t.up : t.down) })));
     }
+    if (entry.entryLine) entry.entryLine.applyOptions({ color: t.accent });
+    if (entry.marker) entry.candles.setMarkers([Object.assign({}, entry.marker, { color: t.accent })]);
   }
   function buildChart(el, it, isBig, tf) {
     const sd = seriesData(it, tf);
@@ -608,11 +715,24 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
     const entry = { chart, candles, mas, volume, item: it, isBig, tf };
+    if (isBig && it._seguimiento) markTracking(entry, sd, rowsFor(it, tf), t);
     applyColors(entry, t);
     const n = sd.candles.length;
     const visible = isBig ? 150 : SIZES[state.size];
     chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - visible), to: n - 1 + (isBig ? 6 : 2) });
     return entry;
+  }
+  // En el gráfico de una moneda en seguimiento: línea con el precio de entrada y marca en la vela de ese día.
+  function markTracking(entry, sd, rows, t) {
+    const sg = entry.item._seguimiento;
+    entry.entryLine = entry.candles.createPriceLine({
+      price: sg.precio, color: t.accent, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true, title: "Seguimiento",
+    });
+    const ms = Date.parse(sg.hora);
+    let idx = -1;
+    for (let i = 0; i < rows.length && rows[i][0] <= ms; i++) idx = i;
+    if (idx >= 0) entry.marker = { time: sd.candles[idx].time, position: "belowBar", shape: "arrowUp", text: shortDate(sg.fecha) };
   }
   function createMini(el) {
     const it = state.view[Number(el.dataset.index)];
@@ -677,16 +797,20 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     $("v-badge").textContent = MARKET_NAMES[it.mercado] || it.mercado;
     $("v-price").textContent = fmtPrice(it.precio);
     const chg = $("v-chg");
-    chg.textContent = fmtPct(it.var_24h_pct) + " 24h";
+    chg.textContent = it.var_24h_pct == null ? "" : fmtPct(it.var_24h_pct) + " 24h";
     chg.className = "chg " + (it.var_24h_pct >= 0 ? "up" : "down");
     const stats = $("v-stats");
     stats.textContent = "";
-    stats.append(
-      h("span", { class: "tf-tag", text: tfLabel(state.data.intervalo), title: "Datos del escaneo en " + tfLabel(state.data.intervalo) }),
-      h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
-      h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
-      h("span", null, "Vol 24h ", h("b", { text: fmtVol(it.volumen_24h) })),
-      h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
+    if (it._seguimiento) {
+      trackStats(it, index);
+    } else {
+      stats.append(
+        h("span", { class: "tf-tag", text: tfLabel(state.data.intervalo), title: "Datos del escaneo en " + tfLabel(state.data.intervalo) }),
+        h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
+        h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
+        h("span", null, "Vol 24h ", h("b", { text: fmtVol(it.volumen_24h) })),
+        h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
+    }
     const link = $("v-link");
     link.hidden = !!state.data.ejemplo;
     link.href = binanceUrl(it);
@@ -694,6 +818,18 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     document.body.classList.add("viewing");
     drawBig(it, index);
     $("v-close").focus({ preventScroll: true });
+  }
+  // Datos del seguimiento en la cabecera del visor, con la variación al precio más reciente.
+  function trackStats(it, index) {
+    const sg = it._seguimiento;
+    const pct = it.precio && sg.precio ? (it.precio - sg.precio) / sg.precio * 100 : null;
+    const stats = $("v-stats");
+    stats.textContent = "";
+    stats.append(
+      h("span", { class: "tf-tag", text: "Seguimiento " + dayTitle(sg.fecha) }),
+      h("span", null, "Precio entonces ", h("b", { text: fmtPrice(sg.precio) })),
+      pct == null ? null : h("span", null, "Variación ", h("b", { class: pct >= 0 ? "up" : "down", text: fmtPct(pct) })),
+      h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
   }
   function drawBig(it, index) {
     const tf = state.vtf, el = $("big");
@@ -705,6 +841,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       el.textContent = "";
       tfButtons($("v-tf"), tf, pickTf, it);
       $("v-price").textContent = fmtPrice(it.precio);
+      if (it._seguimiento) trackStats(it, index);
       big = buildChart(el, it, true, tf);
       const sd = seriesData(it, tf);
       const last = sd ? sd.candles.length - 1 : -1;
@@ -730,6 +867,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     closeBig();
     $("viewer").hidden = true;
     document.body.classList.remove("viewing");
+    if (state.trackSaved) {  // el visor se abrió desde el seguimiento: vuelve el escáner a como estaba
+      Object.assign(state, state.trackSaved);
+      state.trackSaved = null;
+    }
     const target = lastFocus && document.contains(lastFocus) ? lastFocus : $("grid").children[state.current];
     if (target) target.focus({ preventScroll: false });
   }
@@ -760,7 +901,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   $("search").addEventListener("input", (e) => { state.q = e.target.value; renderGrid(); });
   function setSize(size) {
     state.size = SIZES[size] ? size : "m";
-    $("grid").className = "grid size-" + state.size;
+    $("grid").className = "grid scan-only size-" + state.size;
     for (const b of $("size").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.size === state.size));
     store.set("size", state.size);
     for (const [el, entry] of minis) {
@@ -803,9 +944,11 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const PRODUCTS_URL = "https://www.binance.com/bapi/asset/v2/public/asset-service/product/get-products?includeEtf=true";
   const API = {
     spot: { nombre: "Spot", bases: ["https://api.binance.com", "https://data-api.binance.vision"], info: "/api/v3/exchangeInfo",
-      klines: "/api/v3/klines", ticker: "/api/v3/ticker/24hr", limit: 6000, infoW: 20, tickerW: 80, klinesW: () => 2 },
+      klines: "/api/v3/klines", ticker: "/api/v3/ticker/24hr", price: "/api/v3/ticker/price", limit: 6000,
+      infoW: 20, tickerW: 80, priceW: 4, klinesW: () => 2 },
     futures: { nombre: "Futures USDⓈ-M", bases: ["https://fapi.binance.com"], info: "/fapi/v1/exchangeInfo",
-      klines: "/fapi/v1/klines", ticker: "/fapi/v1/ticker/24hr", limit: 2400, infoW: 1, tickerW: 40,
+      klines: "/fapi/v1/klines", ticker: "/fapi/v1/ticker/24hr", price: "/fapi/v1/ticker/price", limit: 2400,
+      infoW: 1, tickerW: 40, priceW: 2,
       klinesW: (n) => (n < 100 ? 1 : n < 500 ? 2 : n <= 1000 ? 5 : 10) },
   };
   class ScanError extends Error {
@@ -1007,7 +1150,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (scanController) { scanController.abort(); return; }
     const opts = {
       market: $("scan-market").value, interval: $("scan-interval").value, quote: "USDT",
-      minVolume: Math.max(0, parseFloat($("scan-minvol").value) || 0),
+      minVolume: Math.max(0, parseFloat($("scan-minvol").value) || 0), track: $("scan-track").checked,
     };
     store.set("scan", JSON.stringify(opts));
     const keys = opts.market === "ambos" ? ["spot", "futures"] : [opts.market];
@@ -1031,7 +1174,18 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       }
     });
     if (aborted) { status.textContent = "Escaneo detenido."; return; }
-    status.textContent = "Escaneo terminado " + new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + ".";
+    const done = "Escaneo terminado " + new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + ".";
+    status.textContent = done;
+    const fecha = opts.track ? recordScan(mercados, opts.interval) : null;
+    if (fecha) {
+      const saved = done + " Guardado en «Seguimiento " + dayTitle(fecha) + "»";
+      status.textContent = saved + (ghConfig() ? "; subiendo a GitHub…" : " de este navegador.");
+      if (ghConfig()) {
+        syncPending().then((ok) => {
+          status.textContent = saved + (ok ? " y en GitHub." : ". No se pudo subir a GitHub; se reintentará (ver Seguimiento).");
+        });
+      }
+    }
     if (Object.keys(mercados).length) {
       const tfs = [...new Set([...CHART_TFS, opts.interval])].sort((a, b) => (TF_MINUTES[a] || 0) - (TF_MINUTES[b] || 0));
       const [f, m, s] = SCAN_PERIODS;
@@ -1049,8 +1203,464 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       if (saved.market) $("scan-market").value = saved.market;
       if (saved.interval) $("scan-interval").value = saved.interval;
       if (saved.minVolume != null) $("scan-minvol").value = saved.minVolume;
+      if (saved.track === false) $("scan-track").checked = false;
     }
   } catch (err) { /* preferencias no válidas */ }
+
+  // ---------- seguimiento ----------
+  // Cada escaneo guarda las monedas encontradas con su precio en «Seguimiento <día>». Se guarda en este
+  // navegador y, si se conecta, también en el repositorio de GitHub (docs/seguimiento/AAAA-MM-DD.json).
+  // La web publicada lee todos los días de seguimiento.json, que el workflow «Web» genera con esos archivos.
+  const TRACK_CTX = { intervalo: "1d", intervalos_grafico: CHART_TFS, medias: SCAN_PERIODS, solo_cerradas: false, ejemplo: false, mercados: {} };
+  const TRACK_SORTS = {
+    subida: (a, b) => (b.pct ?? -Infinity) - (a.pct ?? -Infinity),
+    bajada: (a, b) => (a.pct ?? Infinity) - (b.pct ?? Infinity),
+    moneda: (a, b) => a.simbolo.localeCompare(b.simbolo),
+    escaneo: (a, b) => a.orden - b.orden,
+  };
+  const track = { remote: {}, prices: {}, market: "todos", sort: "subida", timer: null, sync: "", syncError: "", busy: false };
+  const GH_API = "https://api.github.com";
+  class GhError extends Error {
+    constructor(status, message) { super(message); this.status = status; }
+  }
+  function readJSON(key, fallback) {
+    try { const v = JSON.parse(store.get(key) || "null"); return v == null ? fallback : v; } catch (err) { return fallback; }
+  }
+  const localDays = () => readJSON("seguimiento", {});
+  const saveLocalDays = (days) => store.set("seguimiento", JSON.stringify(days));
+  const deletedDays = () => readJSON("seguimiento-borrados", {});
+  const saveDeletedDays = (days) => store.set("seguimiento-borrados", JSON.stringify(days));
+  function todayKey(d = new Date()) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function dayDate(fecha) { const [y, m, d] = fecha.split("-").map(Number); return new Date(y, m - 1, d); }
+  function dayTitle(fecha) {
+    const date = dayDate(fecha);
+    const text = date.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+    return date.getFullYear() === new Date().getFullYear() ? text : text + " de " + date.getFullYear();
+  }
+  function shortDate(fecha) { return dayDate(fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" }); }
+  function daysAgo(fecha) {
+    const n = Math.round((dayDate(todayKey()) - dayDate(fecha)) / 86400000);
+    return n <= 0 ? "hoy" : n === 1 ? "ayer" : "hace " + n + " días";
+  }
+  const timeOf = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }); };
+  const coinKey = (c) => c.mercado + ":" + c.simbolo;
+  // Une dos versiones del mismo día: cada moneda una vez, con el primer precio en que apareció.
+  function mergeDay(a, b) {
+    const coins = new Map();
+    for (const c of [...((a && a.monedas) || []), ...((b && b.monedas) || [])]) {
+      if (!c || !c.simbolo || !c.mercado) continue;
+      const prev = coins.get(coinKey(c));
+      if (!prev || String(c.hora) < String(prev.hora)) coins.set(coinKey(c), c);
+    }
+    return { fecha: (a || b).fecha, monedas: [...coins.values()] };
+  }
+  function cleanDay(day) {
+    return { fecha: day.fecha, monedas: day.monedas.map((c) => ({ mercado: c.mercado, simbolo: c.simbolo, base: c.base,
+      quote: c.quote, precio: c.precio, hora: c.hora, intervalo: c.intervalo })) };
+  }
+  function allDays() {
+    const local = localDays(), deleted = deletedDays(), out = {};
+    for (const [fecha, day] of Object.entries(track.remote)) if (!deleted[fecha]) out[fecha] = day;
+    for (const [fecha, day] of Object.entries(local)) out[fecha] = out[fecha] ? mergeDay(out[fecha], day) : day;
+    return Object.values(out).filter((d) => d.monedas && d.monedas.length).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }
+  function recordScan(mercados, interval) {
+    const now = new Date(), fecha = todayKey(now), hora = now.toISOString();
+    const monedas = [];
+    for (const m of Object.values(mercados)) {
+      for (const c of m.coincidencias || []) {
+        monedas.push({ mercado: c.mercado, simbolo: c.simbolo, base: c.base, quote: c.quote, precio: c.precio, hora, intervalo: interval });
+      }
+    }
+    if (!monedas.length) return null;
+    const days = localDays();
+    days[fecha] = Object.assign(mergeDay(days[fecha], { fecha, monedas }), { pendiente: true });
+    // Si el navegador se queda sin espacio, se olvidan primero los días más antiguos que ya están en GitHub
+    // y, si no basta, los más antiguos de todos (el de hoy nunca).
+    const order = Object.keys(days).filter((f) => f !== fecha).sort((a, b) => (days[a].pendiente - days[b].pendiente) || (a < b ? -1 : 1));
+    while (order.length && JSON.stringify(days).length > 2500000) delete days[order.shift()];
+    saveLocalDays(days);
+    const deleted = deletedDays();
+    if (deleted[fecha]) { delete deleted[fecha]; saveDeletedDays(deleted); }
+    return fecha;
+  }
+
+  // GitHub: la clave se guarda solo en este navegador y solo se envía a api.github.com.
+  function ghConfig() { const c = readJSON("github", null); return c && c.token && c.owner && c.repo ? c : null; }
+  function ghMessage(status, detail) {
+    if (status === 401) return "la clave de GitHub no es válida o ha caducado";
+    if (status === 403) return "la clave no tiene permiso para escribir (Contents: Read and write)";
+    if (status === 404) return "no se encuentra el repositorio o la clave no tiene acceso a él";
+    return "GitHub respondió " + status + (detail ? " (" + detail + ")" : "");
+  }
+  async function gh(cfg, method, path, body) {
+    const headers = { Accept: "application/vnd.github+json", Authorization: "Bearer " + cfg.token, "X-GitHub-Api-Version": "2022-11-28" };
+    if (body) headers["Content-Type"] = "application/json";
+    let resp;
+    try {
+      resp = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: "no-store" });
+    } catch (err) {
+      throw new GhError(0, "no hay conexión con GitHub");
+    }
+    if (method === "GET" && resp.status === 404) return null;
+    if (!resp.ok) {
+      let detail = "";
+      try { detail = (await resp.json()).message || ""; } catch (err) { /* sin detalle */ }
+      throw new GhError(resp.status, ghMessage(resp.status, detail));
+    }
+    return resp.status === 204 ? null : resp.json();
+  }
+  const b64encode = (text) => { let bin = ""; for (const byte of new TextEncoder().encode(text)) bin += String.fromCharCode(byte); return btoa(bin); };
+  const b64decode = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), (ch) => ch.charCodeAt(0)));
+  const dayFile = (cfg, fecha) => "/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) + "/contents/docs/seguimiento/" + fecha + ".json";
+  async function pushDay(cfg, day) {
+    const path = dayFile(cfg, day.fecha);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const current = await gh(cfg, "GET", path + "?ref=" + encodeURIComponent(cfg.branch));
+      let merged = day;
+      if (current && current.content) {
+        try { merged = mergeDay(JSON.parse(b64decode(current.content)), day); } catch (err) { /* archivo dañado: se reemplaza */ }
+      }
+      merged = cleanDay(merged);
+      const body = { message: "Seguimiento " + day.fecha + " (" + merged.monedas.length + " monedas)",
+        content: b64encode(JSON.stringify(merged, null, 1) + "\n"), branch: cfg.branch };
+      if (current) body.sha = current.sha;
+      try {
+        await gh(cfg, "PUT", path, body);
+        return merged;
+      } catch (err) {
+        if (err.status !== 409 && err.status !== 422) throw err;  // otro dispositivo guardó a la vez: se vuelve a unir
+      }
+    }
+    throw new GhError(409, "otro dispositivo estaba guardando a la vez");
+  }
+  let syncing = null;
+  function syncPending() {
+    const cfg = ghConfig();
+    if (!cfg) return Promise.resolve(false);
+    if (syncing) return syncing.then(() => syncPending());
+    syncing = (async () => {
+      const pending = Object.values(localDays()).filter((d) => d.pendiente);
+      if (!pending.length) return true;
+      track.busy = true;
+      track.sync = "Subiendo a GitHub…";
+      track.syncError = "";
+      renderSync();
+      try {
+        for (const day of pending) {
+          const merged = await pushDay(cfg, day);
+          const days = localDays();
+          const now = days[day.fecha];
+          if (now) {
+            // Si mientras tanto se escaneó otra vez ese día, queda pendiente para la próxima subida.
+            const changed = now.monedas.length !== day.monedas.length;
+            days[day.fecha] = Object.assign(mergeDay(merged, now), { pendiente: changed });
+            saveLocalDays(days);
+          }
+        }
+        track.sync = "Subido a las " + timeOf(new Date().toISOString()) + ".";
+        return true;
+      } catch (err) {
+        track.syncError = err.message;
+        return false;
+      } finally {
+        syncing = null;
+        track.busy = false;
+        renderSync();
+        if (!$("view-track").hidden) renderTracking();
+      }
+    })();
+    return syncing;
+  }
+  async function deleteDay(fecha) {
+    const cfg = ghConfig();
+    if (track.remote[fecha] && !cfg) {
+      showTrackNotice("No se puede borrar. ", "Este seguimiento está guardado en GitHub; conecta la web con GitHub para borrarlo también de allí.");
+      renderTracking();
+      return;
+    }
+    if (cfg) {
+      try {
+        const path = dayFile(cfg, fecha);
+        const current = await gh(cfg, "GET", path + "?ref=" + encodeURIComponent(cfg.branch));
+        if (current) await gh(cfg, "DELETE", path, { message: "Borrar seguimiento " + fecha, sha: current.sha, branch: cfg.branch });
+      } catch (err) {
+        showTrackNotice("No se pudo borrar. ", "GitHub: " + err.message + ".");
+        renderTracking();
+        return;
+      }
+      const deleted = deletedDays();
+      deleted[fecha] = Date.now();  // la web publicada tarda un minuto en enterarse
+      saveDeletedDays(deleted);
+    }
+    const days = localDays();
+    delete days[fecha];
+    saveLocalDays(days);
+    showTrackNotice();
+    renderTracking();
+  }
+  async function loadRemote() {
+    try {
+      const resp = await fetch("seguimiento.json?t=" + Date.now(), { cache: "no-store" });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const days = {};
+      for (const d of data.dias || []) {
+        if (d && /^\d{4}-\d{2}-\d{2}$/.test(d.fecha) && Array.isArray(d.monedas)) days[d.fecha] = { fecha: d.fecha, monedas: d.monedas };
+      }
+      track.remote = days;
+      const deleted = deletedDays();
+      let changed = false;
+      for (const fecha of Object.keys(deleted)) if (!days[fecha]) { delete deleted[fecha]; changed = true; }
+      if (changed) saveDeletedDays(deleted);
+    } catch (err) { /* página abierta como archivo o en otro alojamiento: solo hay datos de este navegador */ }
+  }
+  async function refreshPrices() {
+    const markets = [...new Set(allDays().flatMap((d) => d.monedas.map((c) => c.mercado)))].filter((m) => API[m]);
+    if (!markets.length) { renderTracking(); return; }
+    const button = $("track-refresh");
+    button.disabled = true;
+    $("track-status").textContent = "Actualizando precios…";
+    const problems = [];
+    await Promise.all(markets.map(async (m) => {
+      try {
+        const api = liveApis[m] || (liveApis[m] = new BinanceApi(API[m], NEVER));
+        const rows = await api.get(API[m].price, null, API[m].priceW);
+        track.prices[m] = new Map(rows.map((r) => [r.symbol, +r.price]));
+      } catch (err) {
+        problems.push(API[m].nombre + ": " + err.message);
+      }
+    }));
+    button.disabled = false;
+    $("track-status").textContent = "Precios de las " + timeOf(new Date().toISOString()) + " · se actualizan cada minuto";
+    if (problems.length) showTrackNotice("Aviso. ", problems.join(" "));
+    renderTracking();
+  }
+  function showTrackNotice(label, text) {
+    const n = $("track-notice");
+    n.textContent = "";
+    n.hidden = !(label || text);
+    if (label) n.append(h("b", { text: label }));
+    if (text) n.append(text);
+  }
+
+  // ---------- seguimiento: pantalla ----------
+  function withPrices(day) {
+    let coins = day.monedas;
+    if (track.market === "unicas") coins = uniqueItems(coins);
+    else if (track.market !== "todos") coins = coins.filter((c) => c.mercado === track.market);
+    return coins.map((c, i) => {
+      const prices = track.prices[c.mercado];
+      const now = prices ? prices.get(c.simbolo) : undefined;
+      const pct = now != null && c.precio ? (now - c.precio) / c.precio * 100 : null;
+      return Object.assign({}, c, { ahora: now == null ? null : now, pct, orden: i });
+    });
+  }
+  function summarize(coins) {
+    const priced = coins.filter((c) => c.pct != null);
+    if (!priced.length) return { n: 0 };
+    const sorted = [...priced].sort((a, b) => b.pct - a.pct);
+    return {
+      n: priced.length, avg: priced.reduce((sum, c) => sum + c.pct, 0) / priced.length,
+      up: priced.filter((c) => c.pct > 0).length, down: priced.filter((c) => c.pct < 0).length,
+      best: sorted[0], worst: sorted[sorted.length - 1],
+    };
+  }
+  function changeBar(pct) {
+    if (pct == null) return null;
+    const bar = h("span", { class: "chgbar", "aria-hidden": "true" });
+    const fill = h("i");
+    fill.style.width = Math.min(100, Math.abs(pct) / 25 * 100) + "%";  // barra llena = 25 % o más
+    bar.append(fill);
+    return bar;
+  }
+  const ICON_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  function isOpen(fecha, index) {
+    const states = readJSON("seguimiento-abiertos", {});
+    return fecha in states ? states[fecha] : index === 0;  // por defecto, solo el día más reciente
+  }
+  function toggleDay(fecha, index) {
+    const states = readJSON("seguimiento-abiertos", {});
+    states[fecha] = !isOpen(fecha, index);
+    store.set("seguimiento-abiertos", JSON.stringify(states));
+    renderTracking();
+  }
+  function deleteControl(fecha) {
+    const wrap = h("span", { class: "confirm" });
+    const ask = h("button", { class: "btn small", type: "button", text: "Borrar" });
+    ask.addEventListener("click", () => {
+      wrap.textContent = "";
+      const yes = h("button", { class: "btn small danger", type: "button", text: "Sí, borrar" });
+      const no = h("button", { class: "btn small", type: "button", text: "No" });
+      yes.addEventListener("click", () => { yes.disabled = true; no.disabled = true; deleteDay(fecha); });
+      no.addEventListener("click", () => { wrap.textContent = ""; wrap.append(ask); });
+      wrap.append(h("span", { text: "¿Borrar este seguimiento?" }), yes, no);
+      no.focus();
+    });
+    wrap.append(ask);
+    return wrap;
+  }
+  function coinTable(day, coins) {
+    const table = h("table", { class: "coins" });
+    table.append(h("thead", null, h("tr", null,
+      h("th", { text: "Moneda" }),
+      h("th", { class: "r", text: "Precio " + shortDate(day.fecha) }),
+      h("th", { class: "r", text: "Precio actual" }),
+      h("th", { class: "r", text: "Variación" }),
+      h("th", { class: "col-scan", text: "Escaneo" }))));
+    const body = h("tbody");
+    coins.forEach((c, i) => {
+      const tr = h("tr", { tabindex: "0", title: "Ver el gráfico de " + c.simbolo },
+        h("td", { class: "c-coin" }, h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
+          h("span", { class: "badge", text: MARKET_NAMES[c.mercado] || c.mercado })),
+        h("td", { class: "r num c-then", "data-label": shortDate(day.fecha), text: fmtPrice(c.precio) }),
+        h("td", { class: "r num c-now", "data-label": "ahora", text: c.ahora == null ? "—" : fmtPrice(c.ahora) }),
+        h("td", { class: "r num c-pct " + (c.pct == null ? "" : c.pct >= 0 ? "up" : "down") }, c.pct == null ? "—" : fmtPct(c.pct), changeBar(c.pct)),
+        h("td", { class: "col-scan muted", text: timeOf(c.hora) + (c.intervalo ? " · velas " + tfLabel(c.intervalo) : "") }));
+      const open = () => openTrackedChart(day, coins, i);
+      tr.addEventListener("click", open);
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+      body.append(tr);
+    });
+    table.append(body);
+    return h("div", { class: "day-body" }, table);
+  }
+  function dayCard(day, index) {
+    const coins = withPrices(day).sort(TRACK_SORTS[track.sort] || TRACK_SORTS.subida);
+    const open = isOpen(day.fecha, index);
+    const s = summarize(coins);
+    const toggle = h("button", { class: "day-toggle", type: "button", "aria-expanded": String(open) });
+    toggle.innerHTML = ICON_CHEVRON;
+    toggle.append(h("h2", { text: "Seguimiento " + dayTitle(day.fecha) }));
+    toggle.addEventListener("click", () => toggleDay(day.fecha, index));
+    const stats = h("div", { class: "day-stats" },
+      h("span", null, h("b", { text: String(coins.length) }), coins.length === 1 ? " moneda" : " monedas"),
+      s.n ? h("span", null, "Media ", h("b", { class: s.avg >= 0 ? "up" : "down", text: fmtPct(s.avg) })) : null,
+      s.n ? h("span", null, h("b", { class: "up", text: "▲ " + s.up }), " suben · ", h("b", { class: "down", text: "▼ " + s.down }), " bajan") : null,
+      s.n > 1 ? h("span", null, "Mejor ", h("b", { text: (s.best.base || s.best.simbolo) + " " + fmtPct(s.best.pct) })) : null,
+      s.n > 1 ? h("span", null, "Peor ", h("b", { text: (s.worst.base || s.worst.simbolo) + " " + fmtPct(s.worst.pct) })) : null,
+      h("span", { text: daysAgo(day.fecha) }));
+    const card = h("article", { class: "day" },
+      h("header", { class: "day-head" }, toggle, stats, h("div", { class: "day-actions" }, deleteControl(day.fecha))));
+    if (open) card.append(coins.length ? coinTable(day, coins) : h("p", { class: "gh-note", style: "padding: 0 14px 12px", text: "Ninguna moneda con este filtro." }));
+    return card;
+  }
+  function renderTrackMarket() {
+    const seg = $("track-market");
+    seg.textContent = "";
+    for (const [key, label] of [["todos", "Todos"], ["spot", "Spot"], ["futures", "Futuros"], ["unicas", "No repetidas"]]) {
+      const b = h("button", { type: "button", "aria-pressed": String(key === track.market) }, label);
+      b.addEventListener("click", () => { track.market = key; renderTracking(); });
+      seg.append(b);
+    }
+  }
+  function renderSync() {
+    const box = $("track-sync");
+    box.textContent = "";
+    const cfg = ghConfig();
+    if (!cfg) {
+      const connect = h("button", { class: "btn small", type: "button", text: "Guardar también en GitHub" });
+      connect.addEventListener("click", () => showGhForm(true));
+      box.append(h("span", { text: "Guardado solo en este navegador." }), connect);
+      return;
+    }
+    box.append(h("span", null, "Guardado en GitHub: ", h("b", { text: cfg.owner + "/" + cfg.repo })));
+    if (track.syncError) box.append(h("span", { class: "down", text: "No se pudo subir: " + track.syncError + "." }));
+    else if (track.sync) box.append(h("span", { text: track.sync }));
+    const pending = Object.values(localDays()).filter((d) => d.pendiente).length;
+    if (pending && !track.busy) {
+      const retry = h("button", { class: "btn small", type: "button", text: pending === 1 ? "Subir el día pendiente" : "Subir " + pending + " días pendientes" });
+      retry.addEventListener("click", () => syncPending());
+      box.append(retry);
+    }
+    const off = h("button", { class: "btn small", type: "button", text: "Desconectar" });
+    off.addEventListener("click", () => { store.set("github", ""); track.sync = ""; track.syncError = ""; renderSync(); });
+    box.append(off);
+  }
+  function renderTracking() {
+    renderTrackMarket();
+    renderSync();
+    $("track-sort").value = track.sort;
+    const list = $("track-days");
+    list.textContent = "";
+    const days = allDays();
+    if (!days.length) {
+      const go = h("button", { class: "btn", type: "button", text: "Ir al escáner" });
+      go.addEventListener("click", () => { location.hash = ""; });
+      list.append(h("div", { class: "empty" },
+        h("p", { style: "margin: 0 0 12px", text: "Todavía no hay seguimientos. Cada escaneo se guarda aquí, en un apartado con la fecha del día y el precio de cada moneda en ese momento." }),
+        go));
+      return;
+    }
+    days.forEach((day, i) => list.append(dayCard(day, i)));
+  }
+  // Abre una moneda del seguimiento en el visor de gráficos, con el precio de entrada marcado.
+  function openTrackedChart(day, coins, index) {
+    if (!state.trackSaved) state.trackSaved = { view: state.view, data: state.data, current: state.current, vtf: state.vtf };
+    state.data = TRACK_CTX;
+    state.tf = state.tf || DEFAULT_TF;
+    state.view = coins.map((c) => ({
+      mercado: c.mercado, simbolo: c.simbolo, base: c.base, quote: c.quote, precio: c.ahora == null ? c.precio : c.ahora,
+      var_24h_pct: null, dist_ma_lenta_pct: null, velas_desde_cruce: null, cruce_visible: true,
+      _seguimiento: { fecha: day.fecha, precio: c.precio, hora: c.hora },
+    }));
+    openViewer(index);
+  }
+  function showGhForm(show) {
+    $("gh-form").hidden = !show;
+    if (!show) return;
+    const cfg = readJSON("github", null);
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/i);
+    const repo = location.pathname.split("/").filter(Boolean)[0];
+    $("gh-repo").value = cfg && cfg.owner ? cfg.owner + "/" + cfg.repo : m && repo ? m[1] + "/" + repo : "";
+    $("gh-token").value = "";
+    $("gh-msg").textContent = "";
+    $("gh-token").focus();
+  }
+  async function connectGitHub(event) {
+    event.preventDefault();
+    const [owner, repo] = $("gh-repo").value.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "").split("/");
+    const token = $("gh-token").value.trim();
+    const msg = $("gh-msg");
+    if (!owner || !repo || !token) { msg.textContent = "Escribe el repositorio (usuario/repositorio) y la clave."; return; }
+    msg.textContent = "Comprobando…";
+    try {
+      const info = await gh({ token }, "GET", "/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo));
+      if (!info) throw new GhError(404, ghMessage(404));
+      const [o, r] = String(info.full_name || owner + "/" + repo).split("/");
+      store.set("github", JSON.stringify({ owner: o, repo: r, branch: info.default_branch || "main", token }));
+      showGhForm(false);
+      track.sync = "Conectado.";
+      track.syncError = "";
+      renderSync();
+      await syncPending();  // sube lo que estaba guardado solo en este navegador
+    } catch (err) {
+      msg.textContent = "No se pudo conectar: " + err.message + ".";
+    }
+  }
+  function showView(view) {
+    const tracking = view === "track";
+    document.body.classList.toggle("tracking", tracking);
+    $("view-track").hidden = !tracking;
+    for (const b of $("views").querySelectorAll("button")) b.setAttribute("aria-pressed", String((b.dataset.view === "track") === tracking));
+    clearInterval(track.timer);
+    track.timer = null;
+    if (!tracking) return;
+    renderTracking();
+    loadRemote().then(() => { renderTracking(); refreshPrices(); });
+    track.timer = setInterval(() => { if (document.visibilityState === "visible") refreshPrices(); }, 60000);
+  }
+  for (const b of $("views").querySelectorAll("button")) {
+    b.addEventListener("click", () => { location.hash = b.dataset.view === "track" ? "seguimiento" : ""; });
+  }
+  window.addEventListener("hashchange", () => showView(location.hash === "#seguimiento" ? "track" : "scan"));
+  $("track-sort").addEventListener("change", (e) => { track.sort = e.target.value; store.set("seguimiento-orden", track.sort); renderTracking(); });
+  $("track-refresh").addEventListener("click", () => refreshPrices());
+  $("gh-form").addEventListener("submit", connectGitHub);
+  $("gh-cancel").addEventListener("click", () => showGhForm(false));
+  track.sort = TRACK_SORTS[store.get("seguimiento-orden")] ? store.get("seguimiento-orden") : track.sort;
 
   // ---------- arranque ----------
   state.sort = store.get("sort") || state.sort;
@@ -1066,5 +1676,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   if (!window.LightweightCharts) {
     renderNotice("Sin gráficos. ", "No se pudo cargar la librería de gráficos; revisa tu conexión a internet.", true);
   }
+  if (location.hash === "#seguimiento") showView("track");
+  syncPending();  // días guardados sin conexión con GitHub
 })();
 </script>
