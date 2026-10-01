@@ -80,6 +80,7 @@ SPOT (USDT) — 57 coincidencias de 402 analizadas
 | `--graficos INTERVALO…` | `2h 4h 8h 12h 1d` | Temporalidades que se pueden ver en los gráficos. |
 | `--sin-grafico` | no | No genera el informe con los gráficos. |
 | `--no-abrir` | no | Genera el informe pero no lo abre en el navegador. |
+| `--servir` / `--puerto N` | no / `8000` | Abre el informe por `http://localhost` (automático en Codespaces). |
 | `--workers N` | `8` | Descargas en paralelo. |
 | `--spot-url / --futures-url` | API oficial | URL base alternativa de la API. |
 
@@ -149,26 +150,51 @@ se descarga en **Artifacts → momento-b**.
 
 ### Futuros y los servidores de EE. UU.
 
-Los servidores de GitHub están en EE. UU. y Binance rechaza desde allí la API de
-futuros (error `451`). En spot se usa `data-api.binance.vision`, que sí responde.
-Para escanear futuros hay tres opciones:
+Los servidores de GitHub Actions están en EE. UU. y Binance rechaza desde allí la
+API de futuros (error `451`). En spot se usa `data-api.binance.vision`, que sí
+responde. Para escanear futuros, el escaneo tiene que salir desde otro país:
 
-1. **Ejecutarlo en tu ordenador** con `python -m momento_b`. Es lo más sencillo.
-2. **Usar tu ordenador como ejecutor de GitHub** y seguir lanzándolo desde el botón:
-   1. En el repositorio: **Settings → Actions → Runners → New self-hosted runner**.
-   2. Elige tu sistema (Windows, macOS o Linux) y ejecuta los comandos que muestra
-      GitHub (descargar, `config` con el token y `run`). Mientras esté en marcha,
-      el ejecutor aparece como *Idle*.
-   3. **Actions → Scanner → Run workflow** con **Servidor: mi-ordenador**.
-
-   El escaneo sale desde tu conexión, así que funcionan spot y futuros, y el
-   resumen y el informe quedan en GitHub igual que antes. GitHub recomienda los
-   ejecutores propios solo en repositorios privados: mantén este repositorio privado.
+1. **GitHub Codespaces en Europa o Asia** (solo con el navegador, ver abajo).
+2. **Tu ordenador**, con `python -m momento_b`, o registrándolo como ejecutor
+   de GitHub (**Settings → Actions → Runners → New self-hosted runner**) y
+   lanzando el workflow con **Servidor: mi-ordenador**. GitHub recomienda los
+   ejecutores propios solo en repositorios privados.
 3. **Un servidor propio (VPS) en un país donde Binance opere**, registrado como
-   ejecutor igual que en la opción 2, si quieres lanzarlo sin tener tu ordenador encendido.
+   ejecutor igual que en la opción 2, si quieres lanzarlo desde el botón sin
+   depender de tu ordenador.
 
 Usar un proxy o una VPN para saltarse el bloqueo va contra las condiciones de
 uso de Binance, así que no es una opción recomendada.
+
+## Ejecutarlo en el navegador (GitHub Codespaces)
+
+Codespaces es un ordenador en la nube que se usa desde el navegador (también
+desde el móvil), así que no hace falta tener tu ordenador encendido. El plan
+gratuito de GitHub incluye horas de uso al mes de sobra para escanear.
+
+**Una sola vez — elegir la región:** en
+[github.com/settings/codespaces](https://github.com/settings/codespaces), en
+**Region**, elige **Europe West** (o **Southeast Asia**). No dejes "US East" ni
+"US West", porque Binance bloquea EE. UU.
+
+**Cada vez que quieras escanear:**
+
+1. En el repositorio, **Code → Codespaces → Create codespace on main** (la
+   primera vez tarda un par de minutos; después puedes reabrir el mismo).
+2. En la terminal de abajo escribe:
+
+   ```bash
+   python -m momento_b
+   ```
+
+3. Al terminar, los gráficos se abren en una pestaña nueva. Si no se abre, ve a
+   la pestaña **PUERTOS** (*PORTS*), puerto `8000`, y pulsa el icono del globo.
+4. Pulsa `Ctrl+C` en la terminal cuando termines. El codespace se detiene solo
+   tras 30 minutos sin uso.
+
+Si en futuros sale el error `451`, Binance también bloquea esa región: borra el
+codespace y crea otro con **Code → Codespaces → ··· → New with options →
+Region** eligiendo la otra (Europe West ↔ Southeast Asia).
 
 ## Tests
 

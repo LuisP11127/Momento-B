@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import math
+import os
 import sys
 import webbrowser
 from datetime import datetime, timezone
@@ -13,7 +14,7 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 from .binance import MARKETS, BinanceClient, BinanceError
-from .report import build_payload, signal_to_dict, write_report
+from .report import build_payload, serve_report, signal_to_dict, write_report
 from .scanner import SORT_KEYS, ScanConfig, ScanResult, Signal, fetch_charts, scan_market
 
 INTERVALS = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]
@@ -59,6 +60,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--graficos", nargs="+", choices=INTERVALS, default=CHART_INTERVALS, metavar="INTERVALO",
                    help="temporalidades disponibles en los gráficos (por defecto: 2h 4h 8h 12h 1d)")
     p.add_argument("--no-abrir", action="store_true", help="generar el informe pero no abrirlo en el navegador")
+    p.add_argument("--servir", action="store_true",
+                   help="abrir el informe a través de http://localhost (automático en GitHub Codespaces)")
+    p.add_argument("--puerto", type=int, default=8000, help="puerto para --servir (por defecto: 8000)")
     p.add_argument("--workers", type=int, default=8, help="descargas en paralelo (por defecto: 8)")
     p.add_argument("--spot-url", help="URL base de la API spot (por defecto: https://api.binance.com)")
     p.add_argument("--futures-url", help="URL base de la API de futuros (por defecto: https://fapi.binance.com)")
@@ -255,7 +259,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default_name = f"momento-b_{config.interval}_{started.astimezone():%Y%m%d-%H%M}.html"
         path = write_report(Path(args.html) if args.html else REPORTS_DIR / default_name, payload)
         print(f"Gráficos interactivos: {path}")
-        if not args.no_abrir:
+        in_codespaces = os.environ.get("CODESPACES") == "true"
+        if args.servir or (in_codespaces and not args.no_abrir):
+            if in_codespaces:
+                print("Codespaces abrirá los gráficos en una pestaña nueva; si no, pestaña PUERTOS → "
+                      f"{args.puerto} → «Abrir en el navegador».")
+            # En Codespaces la pestaña la abre el reenvío de puertos (.devcontainer/devcontainer.json).
+            serve_report(path, args.puerto, open_browser=not in_codespaces and not args.no_abrir)
+        elif not args.no_abrir:
             webbrowser.open(path.resolve().as_uri())
 
     return 1 if failed else 0

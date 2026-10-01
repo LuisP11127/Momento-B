@@ -288,6 +288,7 @@ def both_clients():
 def opened(monkeypatch):
     calls = []
     monkeypatch.setattr(cli.webbrowser, "open", calls.append)
+    monkeypatch.delenv("CODESPACES", raising=False)  # que los tests no dependan de dónde se ejecutan
     return calls
 
 
@@ -422,3 +423,47 @@ def test_asset_tags_parses_binance_products(monkeypatch):
     assert client.asset_tags() is None
     monkeypatch.setattr(client.session, "get", lambda *a, **kw: FakeResponse({"data": "raro"}))
     assert client.asset_tags() is None
+
+
+def test_report_server_redirects_root_to_report(tmp_path):
+    import threading
+    import urllib.request
+
+    page = tmp_path / "momento-b_4h.html"
+    page.write_text("<p>hola</p>", encoding="utf-8")
+    server = report.make_server(page, 0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        port = server.server_address[1]
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/") as resp:  # sigue la redirección
+            assert resp.geturl().endswith("/momento-b_4h.html")
+            assert resp.read() == b"<p>hola</p>"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_cli_serves_report_in_codespaces(monkeypatch, tmp_path, opened):
+    clients = both_clients()
+    monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
+    served = []
+    monkeypatch.setattr(cli, "serve_report", lambda path, port, open_browser: served.append((path.name, port, open_browser)))
+    monkeypatch.setenv("CODESPACES", "true")
+    assert cli.main(["--html", str(tmp_path / "g.html")]) == 0
+    assert served == [("g.html", 8000, False)]  # la pestaña la abre el reenvío de puertos
+    assert opened == []
+    served.clear()
+    assert cli.main(["--html", str(tmp_path / "g.html"), "--no-abrir"]) == 0
+    assert served == []
+
+
+def test_cli_servir_outside_codespaces(monkeypatch, tmp_path, opened):
+    clients = both_clients()
+    monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
+    served = []
+    monkeypatch.setattr(cli, "serve_report", lambda path, port, open_browser: served.append((port, open_browser)))
+    monkeypatch.delenv("CODESPACES", raising=False)
+    assert cli.main(["--html", str(tmp_path / "g.html"), "--servir", "--puerto", "9100"]) == 0
+    assert served == [(9100, True)]
+    assert opened == []

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import http.server
 import json
+import webbrowser
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Sequence
+from urllib.parse import quote
 
 from .scanner import INTERVAL_MINUTES, SORT_KEYS, ScanResult, Signal
 
@@ -94,3 +97,39 @@ def write_report(path: Path, payload: dict) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_report(payload), encoding="utf-8")
     return path
+
+
+def make_server(path: Path, port: int) -> http.server.ThreadingHTTPServer:
+    """Servidor local que sirve la carpeta del informe; la raíz redirige al informe."""
+    path = Path(path).resolve()
+    target = "/" + quote(path.name)
+
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(path.parent), **kwargs)
+
+        def do_GET(self):
+            if self.path in ("", "/"):
+                self.send_response(302)
+                self.send_header("Location", target)
+                self.end_headers()
+                return
+            super().do_GET()
+
+        def log_message(self, format, *args):  # sin ruido en la terminal
+            pass
+
+    return http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+
+
+def serve_report(path: Path, port: int = 8000, open_browser: bool = True) -> None:
+    """Sirve el informe por http://localhost hasta Ctrl+C (útil en Codespaces o en un servidor remoto)."""
+    with make_server(path, port) as httpd:
+        url = f"http://localhost:{httpd.server_address[1]}/{quote(Path(path).name)}"
+        print(f"Gráficos en {url}  (Ctrl+C para terminar)")
+        if open_browser:
+            webbrowser.open(url)
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print()
