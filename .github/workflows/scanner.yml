@@ -6,16 +6,11 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      servidor:
-        description: "Dónde se ejecuta: en GitHub (EE. UU., futuros bloqueado) o en tu ordenador (ejecutor propio)"
-        type: choice
-        default: "github"
-        options: ["github", "mi-ordenador"]
       mercado:
-        description: "Mercado (auto: solo spot en GitHub, spot y futuros en tu ordenador)"
+        description: "Mercado (futuros da error 451 desde los servidores de GitHub)"
         type: choice
-        default: "auto"
-        options: ["auto", "spot", "futures", "ambos"]
+        default: "spot"
+        options: ["spot", "futures", "ambos"]
       intervalo:
         description: "Temporalidad del escaneo"
         type: choice
@@ -41,11 +36,10 @@ jobs:
 
   scan:
     needs: tests
-    # "mi-ordenador" usa un ejecutor propio (self-hosted) registrado en Settings → Actions → Runners.
-    runs-on: ${{ inputs.servidor == 'mi-ordenador' && 'self-hosted' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      MERCADO: ${{ (inputs.mercado == 'auto' || inputs.mercado == '') && (inputs.servidor == 'mi-ordenador' && 'ambos' || 'spot') || inputs.mercado }}
+      MERCADO: ${{ inputs.mercado || 'spot' }}
       INTERVALO: ${{ inputs.intervalo || '4h' }}
       MIN_VOLUMEN: ${{ inputs.min_volumen || '0' }}
       PYTHONUNBUFFERED: "1"
@@ -57,9 +51,8 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
 
-      # Binance puede bloquear las IP de GitHub (error 451): el escaneo no hace fallar el workflow,
-      # el resultado queda en el resumen y en el informe descargable. En Python para que funcione
-      # igual en Linux, macOS y Windows (ejecutor propio).
+      # Binance bloquea las IP de servidores en la nube (error 451 en futuros): el escaneo no hace
+      # fallar el workflow, el resultado queda en el resumen y en el informe descargable.
       - name: Escanear Binance
         id: scan
         continue-on-error: true

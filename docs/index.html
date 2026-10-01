@@ -276,7 +276,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const $ = (id) => document.getElementById(id);
   const MARKET_NAMES = { spot: "Spot", futures: "Futuros" };
   const SIZES = { s: 90, m: 120, l: 160 };  // velas visibles en cada mini-gráfico
-  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null };
+  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null, freshSince: 0 };
   const minis = new Map();  // elemento .mini -> entrada de gráfico
   let big = null;
   let lastFocus = null;
@@ -348,13 +348,23 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (!obj || typeof obj !== "object" || !obj.mercados) throw new Error("no contiene resultados del scanner");
     return obj;
   }
+  const ALL_TFS = ["15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "1w"];
+  const DEFAULT_TF = "1d";
+  // Temporalidades que trae el escaneo (para «Cumple en») y todas las que se pueden ver en los gráficos.
   function intervals() { return state.data.intervalos_grafico || [state.data.intervalo]; }
+  function chartTfs() {
+    return [...new Set([...ALL_TFS, ...intervals()])].sort((a, b) => (TF_MINUTES[a] || 0) - (TF_MINUTES[b] || 0));
+  }
   function tfLabel(tf) { return tf.replace(/d$/, "D").replace(/w$/, "W"); }
+  function rowsFor(it, tf) {
+    const rows = tf === state.data.intervalo ? it.velas : (it.graficos || {})[tf];
+    return Array.isArray(rows) && rows.length ? rows : null;
+  }
   function seriesData(it, tf) {
     it._sd = it._sd || {};
     if (tf in it._sd) return it._sd[tf];
-    const rows = tf === state.data.intervalo ? it.velas : (it.graficos || {})[tf];
-    if (!Array.isArray(rows) || rows.length === 0) return (it._sd[tf] = null);
+    const rows = rowsFor(it, tf);
+    if (!rows) return (it._sd[tf] = null);
     // Lightweight Charts dibuja en UTC: desplazamos a la hora local del navegador.
     const time = (ms) => Math.floor(ms / 1000) - new Date(ms).getTimezoneOffset() * 60;
     const candles = rows.map((k) => ({ time: time(k[0]), open: k[1], high: k[2], low: k[3], close: k[4] }));
@@ -376,7 +386,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   }
   function tfButtons(container, selected, onPick, it) {
     container.textContent = "";
-    for (const tf of intervals()) {
+    for (const tf of chartTfs()) {
       const b = h("button", { type: "button", "aria-pressed": String(tf === selected) }, tfLabel(tf));
       if (it && meets(it, tf)) {
         b.append(h("span", { class: "dot", title: "La condición también se cumple en " + tfLabel(tf) }));
@@ -386,18 +396,28 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     }
   }
   function renderTf() {
-    tfButtons($("tf"), state.tf, (tf) => { state.tf = tf; store.set("tf", tf); renderTf(); renderGrid(); });
+    // Cada cambio de temporalidad vuelve a pedir las velas a Binance para los gráficos que se ven.
+    tfButtons($("tf"), state.tf, (tf) => { state.tf = tf; state.freshSince = Date.now(); renderTf(); renderGrid(); });
   }
-  function setData(data) {
+  // fresh: los datos acaban de descargarse (escaneo desde esta página), no hace falta volver a pedirlos.
+  function setData(data, fresh) {
     state.data = data;
     state.items = [];
+    const now = Date.now();
+    state.freshSince = fresh ? now : 0;
     for (const [key, m] of Object.entries(data.mercados)) {
-      for (const it of m.coincidencias || []) state.items.push(Object.assign({ mercado: key }, it));
+      for (const it of m.coincidencias || []) {
+        const item = Object.assign({ mercado: key }, it);
+        if (fresh) {
+          item._fresh = {};
+          for (const tf of [data.intervalo, ...Object.keys(item.graficos || {})]) item._fresh[tf] = now;
+        }
+        state.items.push(item);
+      }
     }
     if (data.orden && !store.get("sort")) state.sort = data.orden;
     $("sort").value = state.sort;
-    const savedTf = store.get("tf");
-    state.tf = intervals().includes(savedTf) ? savedTf : data.intervalo;
+    if (!state.tf) state.tf = DEFAULT_TF;
     $("toolbar").hidden = false;
     renderTf();
     renderHeader();
@@ -594,8 +614,28 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function createMini(el) {
     const it = state.view[Number(el.dataset.index)];
     if (!it || minis.has(el)) return;
-    const entry = buildChart(el, it, false, state.tf);
-    if (entry) minis.set(el, entry);
+    const tf = state.tf;
+    const draw = () => {
+      if (!el.isConnected || minis.has(el) || state.tf !== tf) return;
+      el.textContent = "";
+      const entry = buildChart(el, it, false, tf);
+      if (entry) minis.set(el, entry);
+      refreshCard(el, it);
+    };
+    if (isFresh(it, tf)) { draw(); return; }
+    el.append(h("div", { class: "placeholder", text: "Cargando velas de " + tfLabel(tf) + "…" }));
+    loadCandles(it, tf).then(draw);
+  }
+  // Precio, medias y «Cumple en» de la tarjeta con las velas recién descargadas.
+  function refreshCard(mini, it) {
+    const cardEl = mini.closest(".card");
+    if (!cardEl) return;
+    const legend = cardEl.querySelector(".ma-legend");
+    if (legend) legend.replaceWith(maLegend(it, null, state.tf));
+    const price = cardEl.querySelector(".price");
+    if (price) price.textContent = fmtPrice(it.precio);
+    const chips = cardEl.querySelector(".tf-row");
+    if (chips) chips.replaceWith(tfChips(it));
   }
   function refreshTheme() {
     const t = tokens();
@@ -649,20 +689,36 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     link.href = binanceUrl(it);
     viewer.hidden = false;
     document.body.classList.add("viewing");
-    const el = $("big");
-    el.textContent = "";
-    tfButtons($("v-tf"), state.vtf, (tf) => { state.vtf = tf; openViewer(state.current); }, it);
-    big = buildChart(el, it, true, state.vtf);
-    const sdBig = seriesData(it, state.vtf);
-    const last = sdBig ? sdBig.candles.length - 1 : -1;
-    updateLegend(last);
-    if (big) {
-      big.chart.subscribeCrosshairMove((p) => {
-        const idx = p && p.logical != null ? Math.round(p.logical) : last;
-        updateLegend(idx >= 0 && idx <= last ? idx : last);
-      });
-    }
+    drawBig(it, index);
     $("v-close").focus({ preventScroll: true });
+  }
+  function drawBig(it, index) {
+    const tf = state.vtf, el = $("big");
+    // Elegir una temporalidad en el visor siempre vuelve a pedir las velas.
+    const pickTf = (next) => { state.vtf = next; if (it._fresh) delete it._fresh[next]; drawBig(it, index); };
+    const render = () => {
+      if ($("viewer").hidden || state.current !== index || state.vtf !== tf) return;
+      closeBig();
+      el.textContent = "";
+      tfButtons($("v-tf"), tf, pickTf, it);
+      $("v-price").textContent = fmtPrice(it.precio);
+      big = buildChart(el, it, true, tf);
+      const sd = seriesData(it, tf);
+      const last = sd ? sd.candles.length - 1 : -1;
+      updateLegend(last);
+      if (big) {
+        big.chart.subscribeCrosshairMove((p) => {
+          const idx = p && p.logical != null ? Math.round(p.logical) : last;
+          updateLegend(idx >= 0 && idx <= last ? idx : last);
+        });
+      }
+    };
+    tfButtons($("v-tf"), tf, pickTf, it);
+    if (isFresh(it, tf)) { render(); return; }
+    closeBig();
+    el.textContent = "";
+    el.append(h("div", { class: "placeholder", text: "Cargando velas de " + tfLabel(tf) + "…" }));
+    loadCandles(it, tf).then(render);
   }
   function closeBig() {
     if (big) { big.chart.remove(); big = null; }
@@ -737,7 +793,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const SCAN_LIMIT = 150;   // velas para evaluar las medias (99 + margen para ver el cruce)
   const CHART_LIMIT = 299;  // velas de cada gráfico
   const CHART_TFS = ["2h", "4h", "8h", "12h", "1d"];
-  const TF_MINUTES = { "15m": 15, "30m": 30, "1h": 60, "2h": 120, "4h": 240, "6h": 360, "8h": 480, "12h": 720, "1d": 1440, "1w": 10080 };
+  const TF_MINUTES = { "1m": 1, "3m": 3, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "2h": 120, "4h": 240, "6h": 360, "8h": 480,
+    "12h": 720, "1d": 1440, "3d": 4320, "1w": 10080, "1M": 43200 };
   const STABLES = new Set(["USDT", "USDC", "FDUSD", "TUSD", "USDP", "DAI", "BUSD", "USDS", "USDE", "PYUSD", "USD1", "RLUSD", "XUSD", "BFUSD", "EUR", "EURI", "AEUR", "GBP"]);
   const NON_CRYPTO = new Set(["INDEX", "COMMODITY", "EQUITY", "STOCK", "FOREX"]);
   const PRODUCTS_URL = "https://www.binance.com/bapi/asset/v2/public/asset-service/product/get-products?includeEtf=true";
@@ -798,6 +855,35 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       }
       throw lastError || new ScanError("Binance no respondió.", true);
     }
+  }
+  // ---------- velas en vivo para los gráficos ----------
+  const liveApis = {}, liveDown = {}, pendingCandles = new Map();
+  const NEVER = new AbortController().signal;
+  function isFresh(it, tf) { return !!rowsFor(it, tf) && !!it._fresh && it._fresh[tf] >= state.freshSince; }
+  // Descarga las velas de una moneda en esa temporalidad. Si no se puede (sin conexión, dentro de
+  // Claude, datos de ejemplo), el gráfico usa las velas que ya traía el informe.
+  function loadCandles(it, tf) {
+    const cfg = API[it.mercado];
+    if (!cfg || state.data.ejemplo || isFresh(it, tf) || Date.now() - (liveDown[it.mercado] || 0) < 60000) {
+      return Promise.resolve(isFresh(it, tf));
+    }
+    const key = it.mercado + ":" + it.simbolo + ":" + tf;
+    if (!pendingCandles.has(key)) {
+      const api = liveApis[it.mercado] || (liveApis[it.mercado] = new BinanceApi(cfg, NEVER));
+      pendingCandles.set(key, api.get(cfg.klines, { symbol: it.simbolo, interval: tf, limit: CHART_LIMIT }, cfg.klinesW(CHART_LIMIT))
+        .then((rows) => {
+          const data = rows.map(row);
+          if (!data.length) return false;
+          if (tf === state.data.intervalo) it.velas = data; else (it.graficos = it.graficos || {})[tf] = data;
+          if (it._sd) delete it._sd[tf];
+          (it._fresh = it._fresh || {})[tf] = Date.now();
+          it.precio = data[data.length - 1][4];
+          return true;
+        })
+        .catch((err) => { if (err && err.fatal) liveDown[it.mercado] = Date.now(); return false; })
+        .finally(() => pendingCandles.delete(key)));
+    }
+    return pendingCandles.get(key);
   }
   async function runPool(items, size, worker) {
     let next = 0, failure = null;
@@ -949,7 +1035,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       setData({
         generado: new Date().toISOString(), intervalo: opts.interval, intervalos_grafico: tfs, medias: SCAN_PERIODS,
         condicion: "MA" + f + " > MA" + m + " y MA" + f + " < MA" + s, solo_cerradas: false, orden: state.sort, ejemplo: false, mercados,
-      });
+      }, true);
     }
     if (problems.length) renderNotice("Aviso. ", problems.join(" "), !Object.keys(mercados).length);
   }

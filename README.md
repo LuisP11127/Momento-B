@@ -124,15 +124,17 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
 
 - Una tarjeta por moneda con su gráfico de velas y las tres medias, con los
   colores de Binance: MA(7) amarillo, MA(25) rosa y MA(99) morado.
-- **Gráfico: 2h / 4h / 8h / 12h / 1D** cambia la temporalidad de todos los gráficos.
-  La fila «Cumple en» de cada tarjeta marca en qué temporalidades se cumple
-  también MA(7) > MA(25) y MA(7) < MA(99).
+- **Gráfico: 15m … 1D … 1W** cambia la temporalidad de todos los gráficos (por
+  defecto **1D**). Cada cambio vuelve a pedir a Binance las velas del momento.
+  La fila «Cumple en» de cada tarjeta marca en qué temporalidades (2h, 4h, 8h,
+  12h y 1D) se cumple también MA(7) > MA(25) y MA(7) < MA(99).
 - **Tamaño S / M / L** cambia el tamaño de todas las tarjetas.
 - Al pulsar una tarjeta, o el botón de ampliar, el gráfico se abre a pantalla completa:
   - rueda del ratón o pellizco para acercar y alejar, y arrastrar para moverse en el tiempo;
   - botones `−` / `+` y «ver todo el historial» (teclas `-`, `+` y `0`);
   - al pasar el ratón se ven apertura, máximo, mínimo, cierre y el valor de cada media en esa vela;
-  - selector de temporalidad propio (un punto marca dónde también se cumple la condición);
+  - selector de temporalidad propio, que también descarga velas nuevas al cambiar (un punto
+    marca dónde también se cumple la condición);
   - `←` / `→` pasan a la moneda anterior o siguiente y `Esc` cierra;
   - enlace directo al par en Binance.
 - Filtros por mercado, búsqueda por símbolo y los mismos órdenes que en la terminal.
@@ -176,9 +178,7 @@ El workflow `.github/workflows/scanner.yml` pasa los tests y hace un escaneo rea
 
 - se ejecuta solo en cada pull request y en cada cambio en `main`;
 - en **Actions → Scanner → Run workflow** se lanza a mano eligiendo mercado,
-  temporalidad y volumen mínimo. Con **Servidor: mi-ordenador** se ejecuta en un
-  ejecutor propio (*Settings → Actions → Runners → New self-hosted runner*), que
-  GitHub solo recomienda en repositorios privados.
+  temporalidad y volumen mínimo. Desde los servidores de GitHub solo funciona spot.
 
 El resultado se ve en el resumen de la ejecución, y el informe con los gráficos
 se descarga en **Artifacts → momento-b**.
