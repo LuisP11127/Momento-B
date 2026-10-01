@@ -6,6 +6,11 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      mercado:
+        description: "Mercado (futuros suele dar error 451 desde GitHub)"
+        type: choice
+        default: "spot"
+        options: ["spot", "futures", "ambos"]
       intervalo:
         description: "Temporalidad de las velas"
         type: choice
@@ -34,8 +39,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      MERCADO: ${{ inputs.mercado || 'spot' }}
       INTERVALO: ${{ inputs.intervalo || '4h' }}
       MIN_VOLUMEN: ${{ inputs.min_volumen || '0' }}
+      PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -51,7 +58,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p reportes
-          python -m momento_b -i "$INTERVALO" --min-volumen "$MIN_VOLUMEN" \
+          python -m momento_b -m "$MERCADO" -i "$INTERVALO" --min-volumen "$MIN_VOLUMEN" \
             --spot-url https://data-api.binance.vision \
             --no-abrir --html reportes/momento-b.html --json reportes/momento-b.json \
             2>&1 | tee reportes/salida.txt
