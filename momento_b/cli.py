@@ -232,6 +232,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             print(f"{market.label.upper()}: error — {exc}\n", file=sys.stderr)
             continue
         results.append(result)
+        if client.base_url != (base_urls[key] or market.base_url).rstrip("/"):
+            print(f"  Nota: {market.base_url} rechazó la conexión desde esta ubicación; se usó {client.base_url}.",
+                  file=sys.stderr)
         print(render_result(result, args.orden, args.top) + "\n")
         if result.signals and (not args.sin_grafico or args.json):
             fetch_charts(client, result, args.graficos, progress=_progress_printer(market.label, "gráficos descargados"))

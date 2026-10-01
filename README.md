@@ -13,6 +13,39 @@ Es decir: la media corta ya ha cruzado por encima de la media de 25, pero
 todavía no ha alcanzado la de 99. Las medias son simples (SMA) sobre el precio
 de cierre, las mismas que dibuja Binance por defecto en sus gráficos.
 
+## Versión web (en el navegador)
+
+`docs/index.html` es el scanner completo en una sola página: se abre en el
+navegador del móvil o del ordenador, pulsas **Escanear** y aparecen las monedas
+con sus gráficos. Las peticiones a Binance salen **desde tu propio navegador y tu
+conexión**, así que no hace falta ningún servidor ni tener el ordenador encendido.
+
+Binance bloquea las conexiones que llegan desde servidores en la nube (GitHub
+Actions o Codespaces, en cualquier región): esta versión evita ese problema
+porque no pasa por ningún servidor.
+
+### Publicarla con GitHub Pages
+
+GitHub Pages es gratis en repositorios públicos (en privados hace falta GitHub Pro).
+
+1. **Settings → General → Danger Zone → Change visibility → Public** (el código no
+   contiene claves ni datos personales).
+2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. **Actions → Web → Run workflow**. Al terminar, la web queda en
+   `https://<tu-usuario>.github.io/Momento-B/`. Guárdala en favoritos o en la
+   pantalla de inicio del móvil.
+
+El workflow `Web` vuelve a publicarla en cada cambio en `main` y una vez al día,
+con la lista de acciones tokenizadas (bStocks) actualizada en `bstocks.json`.
+
+Si prefieres mantener el repositorio privado, cualquier alojamiento de páginas
+estáticas sirve. Por ejemplo, en Cloudflare Pages conecta el repositorio con el
+comando de compilación `pip install -r requirements.txt && python -m momento_b.web site --bstocks`
+y la carpeta de salida `site`.
+
+Tras cambiar la plantilla de la página, regenera la web con
+`python -m momento_b.web docs`.
+
 ## Instalación
 
 Requiere Python 3.10 o superior.
@@ -133,68 +166,34 @@ límite y reintenta ante errores `429` o de red. Un escaneo de spot + futuros en
 USDT supone una petición de velas por par (del orden de 400 en spot y 500 en
 futuros), por debajo del límite por minuto de ambos mercados.
 
-Binance bloquea su API desde algunos países (respuesta `451`/`403`). En ese caso
-el scanner lo indica y sigue con el otro mercado si puede; para spot puedes
-probar `--spot-url https://data-api.binance.vision`.
+Binance bloquea su API desde algunos países y desde servidores en la nube
+(respuesta `451`/`403`). En spot el scanner pasa entonces a
+`data-api.binance.vision`; en futuros lo indica y sigue con el otro mercado.
 
 ## Ejecutarlo en GitHub
 
 El workflow `.github/workflows/scanner.yml` pasa los tests y hace un escaneo real:
 
 - se ejecuta solo en cada pull request y en cada cambio en `main`;
-- en **Actions → Scanner → Run workflow** se lanza a mano eligiendo servidor,
-  mercado, temporalidad y volumen mínimo (el botón aparece cuando el workflow está en `main`).
+- en **Actions → Scanner → Run workflow** se lanza a mano eligiendo mercado,
+  temporalidad y volumen mínimo. Con **Servidor: mi-ordenador** se ejecuta en un
+  ejecutor propio (*Settings → Actions → Runners → New self-hosted runner*), que
+  GitHub solo recomienda en repositorios privados.
 
 El resultado se ve en el resumen de la ejecución, y el informe con los gráficos
 se descarga en **Artifacts → momento-b**.
 
-### Futuros y los servidores de EE. UU.
+### Futuros y los servidores en la nube
 
-Los servidores de GitHub Actions están en EE. UU. y Binance rechaza desde allí la
-API de futuros (error `451`). En spot se usa `data-api.binance.vision`, que sí
-responde. Para escanear futuros, el escaneo tiene que salir desde otro país:
-
-1. **GitHub Codespaces en Europa o Asia** (solo con el navegador, ver abajo).
-2. **Tu ordenador**, con `python -m momento_b`, o registrándolo como ejecutor
-   de GitHub (**Settings → Actions → Runners → New self-hosted runner**) y
-   lanzando el workflow con **Servidor: mi-ordenador**. GitHub recomienda los
-   ejecutores propios solo en repositorios privados.
-3. **Un servidor propio (VPS) en un país donde Binance opere**, registrado como
-   ejecutor igual que en la opción 2, si quieres lanzarlo desde el botón sin
-   depender de tu ordenador.
+Binance rechaza con el error `451` las conexiones que llegan desde servidores en
+la nube: GitHub Actions y GitHub Codespaces en cualquier región. Para spot, el
+scanner cambia solo a `data-api.binance.vision`, la dirección de Binance para
+datos públicos, que sí responde. Para futuros no hay alternativa: usa la
+[versión web](#versión-web-en-el-navegador) o ejecuta `python -m momento_b` en tu
+ordenador.
 
 Usar un proxy o una VPN para saltarse el bloqueo va contra las condiciones de
 uso de Binance, así que no es una opción recomendada.
-
-## Ejecutarlo en el navegador (GitHub Codespaces)
-
-Codespaces es un ordenador en la nube que se usa desde el navegador (también
-desde el móvil), así que no hace falta tener tu ordenador encendido. El plan
-gratuito de GitHub incluye horas de uso al mes de sobra para escanear.
-
-**Una sola vez — elegir la región:** en
-[github.com/settings/codespaces](https://github.com/settings/codespaces), en
-**Region**, elige **Europe West** (o **Southeast Asia**). No dejes "US East" ni
-"US West", porque Binance bloquea EE. UU.
-
-**Cada vez que quieras escanear:**
-
-1. En el repositorio, **Code → Codespaces → Create codespace on main** (la
-   primera vez tarda un par de minutos; después puedes reabrir el mismo).
-2. En la terminal de abajo escribe:
-
-   ```bash
-   python -m momento_b
-   ```
-
-3. Al terminar, los gráficos se abren en una pestaña nueva. Si no se abre, ve a
-   la pestaña **PUERTOS** (*PORTS*), puerto `8000`, y pulsa el icono del globo.
-4. Pulsa `Ctrl+C` en la terminal cuando termines. El codespace se detiene solo
-   tras 30 minutos sin uso.
-
-Si en futuros sale el error `451`, Binance también bloquea esa región: borra el
-codespace y crea otro con **Code → Codespaces → ··· → New with options →
-Region** eligiendo la otra (Europe West ↔ Southeast Asia).
 
 ## Tests
 

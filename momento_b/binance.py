@@ -37,6 +37,8 @@ class Market:
     ticker_weight: int
     max_klines: int
     klines_weight: Callable[[int], int]
+    # Direcciones alternativas si la principal rechaza la ubicación (451/403).
+    fallback_urls: tuple[str, ...] = ()
 
 
 def _futures_klines_weight(limit: int) -> int:
@@ -61,6 +63,8 @@ SPOT = Market(
     ticker_weight=80,
     max_klines=1000,
     klines_weight=lambda limit: 2,
+    # Dirección de Binance solo para datos de mercado: responde desde servidores en la nube.
+    fallback_urls=("https://data-api.binance.vision",),
 )
 
 FUTURES = Market(
@@ -137,6 +141,8 @@ class BinanceClient:
     ) -> None:
         self.market = market
         self.base_url = (base_url or market.base_url).rstrip("/")
+        # Con una URL elegida a mano no se prueba ninguna otra.
+        self.fallback_urls = [] if base_url else list(market.fallback_urls)
         self.timeout = timeout
         self.max_retries = max_retries
         self.limiter = WeightLimiter(market.default_weight_limit)
@@ -173,6 +179,11 @@ class BinanceClient:
                     "Binance ha bloqueado temporalmente esta IP por exceso de peticiones (418). "
                     "Espera unos minutos y reduce --workers."
                 )
+            if resp.status_code in (403, 451) and self.fallback_urls:
+                self.base_url = self.fallback_urls.pop(0)
+                url = self.base_url + path
+                last_error = f"{resp.status_code} ubicación restringida"
+                continue
             if resp.status_code in (403, 451):
                 raise BinanceFatalError(
                     f"Binance rechaza las peticiones desde esta ubicación ({resp.status_code}) en "
