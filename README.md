@@ -72,6 +72,7 @@ SPOT (USDT) — 57 coincidencias de 402 analizadas
 | `--max-velas N` | — | Solo señales cuyo cruce MA7/MA25 fue hace N velas o menos. |
 | `--solo-cerradas` | no | Ignora la vela en curso. Por defecto se incluye, igual que en el gráfico de Binance. |
 | `--incluir-stables` | no | No descarta stablecoins/fiat como base (USDC, FDUSD, EUR...). |
+| `--incluir-acciones` | no | No descarta las acciones tokenizadas de Binance (bStocks). |
 | `-o, --orden` | `distancia` | `distancia` (a la MA99), `cruce` (más reciente), `volumen`, `variacion`, `simbolo`. |
 | `--top N` | — | Muestra solo las N primeras de cada mercado. |
 | `--csv / --json ARCHIVO` | — | Exporta los resultados (el JSON incluye las velas de cada moneda). |
@@ -108,6 +109,11 @@ Necesita conexión a internet para cargar la librería de gráficos
 - **Futuros**: contratos USDⓈ-M **perpetuos** en estado `TRADING`. Se excluyen
   los trimestrales, los índices (p. ej. `BTCDOMUSDT`) y los de activos no cripto.
 - Se descartan por defecto las stablecoins y monedas fiat como activo base.
+- En spot se descartan también las **acciones tokenizadas** de Binance
+  (*bStocks*: AAPLB, NVDAB, SPYB…), que cotizan en USDT como si fueran
+  criptomonedas. Para saber cuáles son se consulta la lista de productos de la
+  web de Binance; si no responde, el scanner avisa y no las descarta.
+  `--incluir-acciones` las mantiene.
 - Los pares con menos de 99 velas de historial se cuentan aparte como
   "sin historial suficiente".
 

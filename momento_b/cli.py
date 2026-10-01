@@ -44,6 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="ignorar la vela en curso (por defecto se incluye, como en el gráfico de Binance)")
     p.add_argument("--incluir-stables", action="store_true",
                    help="no descartar stablecoins/fiat como base (USDC, FDUSD, EUR...)")
+    p.add_argument("--incluir-acciones", action="store_true",
+                   help="no descartar las acciones tokenizadas de Binance (bStocks: AAPLB, NVDAB...)")
     p.add_argument("-o", "--orden", choices=list(SORT_KEYS), default="distancia",
                    help="orden de la tabla: distancia a la MA lenta (por defecto), cruce más reciente, "
                         "volumen, variación 24h o símbolo")
@@ -114,6 +116,8 @@ def render_result(result: ScanResult, order: str, top: Optional[int]) -> str:
         f"de {result.analyzed} analizadas"
     )
     notes = []
+    if result.skipped_stocks:
+        notes.append(f"{result.skipped_stocks} acciones tokenizadas excluidas")
     if result.skipped_volume:
         notes.append(f"{result.skipped_volume} descartadas por volumen")
     if result.insufficient_data:
@@ -197,6 +201,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         max_bars_since_cross=args.max_velas,
         closed_only=args.solo_cerradas,
         include_stables=args.incluir_stables,
+        include_stocks=args.incluir_acciones,
         workers=args.workers,
     )
     market_keys = ["spot", "futures"] if args.mercado == "ambos" else [args.mercado]
@@ -221,6 +226,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             continue
         results.append(result)
         print(render_result(result, args.orden, args.top) + "\n")
+        for warning in result.warnings:
+            print(f"  Aviso: {warning}", file=sys.stderr)
         for symbol, error in result.errors[:5]:
             print(f"  ! {symbol}: {error}", file=sys.stderr)
 

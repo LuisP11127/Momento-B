@@ -109,13 +109,17 @@ def test_select_symbols_futures_keeps_only_crypto_perpetuals():
 
 
 class FakeClient:
-    def __init__(self, market, exchange_info, klines, tickers=None, errors=None):
+    def __init__(self, market, exchange_info, klines, tickers=None, errors=None, tags=None):
         self.market = market
         self._info = exchange_info
         self._klines = klines
         self._tickers = tickers or []
         self._errors = errors or {}
+        self._tags = {} if tags is None else tags
         self.requested = []
+
+    def asset_tags(self):
+        return self._tags
 
     def exchange_info(self):
         return self._info
@@ -161,6 +165,29 @@ def test_scan_market_finds_only_matching_symbols():
     assert {r[1:] for r in client.requested} == {("1h", 299)}
     assert len(signal.candles) == len(REBOUND)
     assert signal.candles[-1][1:5] == (REBOUND[-1],) * 4
+
+
+def test_scan_market_excludes_tokenized_stocks():
+    tags = {"AAAUSDT": ["bStocks"], "BBBUSDT": ["Layer1_Layer2", "pos"]}
+    client = spot_client(tags=tags)
+    result = scan_market(client, ScanConfig(workers=2))
+    assert result.skipped_stocks == 1
+    assert result.total_symbols == 3
+    assert "AAAUSDT" not in [r[0] for r in client.requested]
+    assert result.signals == []
+    assert [s.symbol for s in scan_market(spot_client(tags=tags), ScanConfig(workers=2, include_stocks=True)).signals] == ["AAAUSDT"]
+
+
+def test_scan_market_warns_when_tags_are_unavailable():
+    result = scan_market(spot_client(tags=None), ScanConfig(workers=2))
+    assert result.skipped_stocks == 0
+    assert [s.symbol for s in result.signals] == ["AAAUSDT"]
+    assert result.warnings == []
+    client = spot_client()
+    client._tags = None
+    result = scan_market(client, ScanConfig(workers=2))
+    assert len(result.warnings) == 1 and "bStocks" in result.warnings[0]
+    assert [s.symbol for s in result.signals] == ["AAAUSDT"]
 
 
 def test_scan_market_min_volume_skips_requests():
@@ -329,3 +356,35 @@ def test_report_embeds_payload_safely():
     assert fragment.startswith("<title>Momento-B Scanner</title>")
     assert "<!doctype" not in fragment and "<body>" not in fragment
     assert embedded_payload(fragment) == payload
+
+
+class FakeResponse:
+    def __init__(self, payload, status=200):
+        self._payload = payload
+        self.status_code = status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import requests
+
+            raise requests.HTTPError(str(self.status_code))
+
+    def json(self):
+        return self._payload
+
+
+def test_asset_tags_parses_binance_products(monkeypatch):
+    from momento_b.binance import BinanceClient
+
+    client = BinanceClient(SPOT)
+    payload = {"code": "000000", "data": [
+        {"s": "AAOIBUSDT", "b": "AAOIB", "an": "Applied Optoelectronics (bStocks)", "tags": ["bStocks"]},
+        {"s": "TRXUSDT", "b": "TRX", "tags": ["Layer1_Layer2", "pos"]},
+        {"s": "NEWUSDT", "tags": None},
+    ]}
+    monkeypatch.setattr(client.session, "get", lambda *a, **kw: FakeResponse(payload))
+    assert client.asset_tags() == {"AAOIBUSDT": ["bStocks"], "TRXUSDT": ["Layer1_Layer2", "pos"], "NEWUSDT": []}
+    monkeypatch.setattr(client.session, "get", lambda *a, **kw: FakeResponse({}, status=403))
+    assert client.asset_tags() is None
+    monkeypatch.setattr(client.session, "get", lambda *a, **kw: FakeResponse({"data": "raro"}))
+    assert client.asset_tags() is None

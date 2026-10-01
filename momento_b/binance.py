@@ -79,6 +79,9 @@ FUTURES = Market(
 
 MARKETS = {SPOT.key: SPOT, FUTURES.key: FUTURES}
 
+# Lista de productos de la web de Binance: trae las etiquetas de cada par spot (p. ej. "bStocks").
+PRODUCTS_URL = "https://www.binance.com/bapi/asset/v2/public/asset-service/product/get-products?includeEtf=true"
+
 
 class WeightLimiter:
     """Reparte el peso de peticiones por minuto entre varios hilos.
@@ -193,6 +196,22 @@ class BinanceClient:
             ):
                 self.limiter.set_limit(int(rule["limit"]))
         return info
+
+    def asset_tags(self) -> Optional[dict[str, list[str]]]:
+        """Etiquetas que la web de Binance muestra para cada par spot, o ``None`` si no responde.
+
+        No es un endpoint de la API oficial, así que cualquier fallo se trata como "sin datos".
+        """
+        try:
+            resp = self.session.get(
+                PRODUCTS_URL, timeout=self.timeout, headers={"User-Agent": "Mozilla/5.0 (compatible; Momento-B)"}
+            )
+            resp.raise_for_status()
+            products = resp.json().get("data")
+            tags = {p["s"]: list(p.get("tags") or []) for p in products if isinstance(p, dict) and "s" in p}
+            return tags or None  # una respuesta vacía o con otro formato no sirve para filtrar
+        except (requests.RequestException, ValueError, AttributeError, TypeError, KeyError):
+            return None
 
     def tickers_24h(self) -> list[dict]:
         return self._get(self.market.ticker_path, weight=self.market.ticker_weight)

@@ -37,6 +37,7 @@ class ScanConfig:
     max_bars_since_cross: Optional[int] = None
     closed_only: bool = False
     include_stables: bool = False
+    include_stocks: bool = False  # acciones tokenizadas de Binance (bStocks)
     workers: int = 8
     extra_history: int = 200  # velas extra para ver hace cuánto fue el cruce y para el gráfico
 
@@ -88,8 +89,10 @@ class ScanResult:
     total_symbols: int = 0
     analyzed: int = 0
     skipped_volume: int = 0
+    skipped_stocks: int = 0
     insufficient_data: int = 0
     errors: list[tuple[str, str]] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 # Órdenes disponibles para mostrar o exportar las señales.
@@ -145,6 +148,11 @@ def select_symbols(
     return selected
 
 
+def is_tokenized_stock(tags: Sequence[str]) -> bool:
+    """Binance etiqueta sus acciones tokenizadas (AAPLB, NVDAB...) como "bStocks"."""
+    return any(isinstance(tag, str) and "stock" in tag.lower() for tag in tags)
+
+
 def _to_float(value) -> Optional[float]:
     try:
         return float(value)
@@ -160,6 +168,16 @@ def scan_market(
     """Descarga velas de todos los pares del mercado y devuelve los que cumplen la condición."""
     result = ScanResult(market=client.market, config=config)
     symbols = select_symbols(client.market.key, client.exchange_info(), config.quote, config.include_stables)
+    if client.market.key == "spot" and not config.include_stocks:
+        tags = client.asset_tags()
+        if tags is None:
+            result.warnings.append(
+                "no se pudo consultar qué pares son acciones tokenizadas (bStocks); pueden aparecer en la lista"
+            )
+        else:
+            crypto = [info for info in symbols if not is_tokenized_stock(tags.get(info.symbol, ()))]
+            result.skipped_stocks = len(symbols) - len(crypto)
+            symbols = crypto
     result.total_symbols = len(symbols)
 
     tickers = {t["symbol"]: t for t in client.tickers_24h()}
