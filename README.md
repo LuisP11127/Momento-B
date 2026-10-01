@@ -125,6 +125,21 @@ Binance bloquea su API desde algunos países (respuesta `451`/`403`). En ese cas
 el scanner lo indica y sigue con el otro mercado si puede; para spot puedes
 probar `--spot-url https://data-api.binance.vision`.
 
+## Ejecutarlo en GitHub
+
+El workflow `.github/workflows/scanner.yml` pasa los tests y hace un escaneo real
+en los servidores de GitHub:
+
+- se ejecuta solo en cada pull request y en cada cambio en `main`;
+- en la pestaña **Actions → Scanner → Run workflow** se lanza a mano eligiendo
+  temporalidad y volumen mínimo (el botón aparece cuando el workflow está en `main`).
+
+El resultado se ve en el resumen de la ejecución, y el informe con los gráficos
+se descarga en **Artifacts → momento-b**. Los servidores de GitHub están en
+EE. UU. y Binance puede rechazarlos (error `451`); para spot se usa
+`data-api.binance.vision`, que suele funcionar. Si un mercado falla, el
+workflow no se marca como fallido y el aviso aparece en el resumen.
+
 ## Tests
 
 ```bash

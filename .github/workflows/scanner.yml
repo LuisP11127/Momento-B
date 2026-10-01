@@ -1,0 +1,81 @@
+name: Scanner
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      intervalo:
+        description: "Temporalidad de las velas"
+        type: choice
+        default: "4h"
+        options: ["15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w"]
+      min_volumen:
+        description: "Volumen mínimo en 24h (en USDT)"
+        default: "0"
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest -q
+
+  scan:
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      INTERVALO: ${{ inputs.intervalo || '4h' }}
+      MIN_VOLUMEN: ${{ inputs.min_volumen || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      # Binance puede bloquear las IP de GitHub (error 451): el escaneo no hace fallar el workflow,
+      # el resultado queda en el resumen y en el informe descargable.
+      - name: Escanear Binance
+        id: scan
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p reportes
+          python -m momento_b -i "$INTERVALO" --min-volumen "$MIN_VOLUMEN" \
+            --spot-url https://data-api.binance.vision \
+            --no-abrir --html reportes/momento-b.html --json reportes/momento-b.json \
+            2>&1 | tee reportes/salida.txt
+
+      - name: Resumen
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Momento-B · velas $INTERVALO"
+            echo
+            echo '```'
+            cat reportes/salida.txt 2>/dev/null || echo "Sin salida"
+            echo '```'
+            echo
+            echo "Descarga el informe con los gráficos en **Artifacts → momento-b**, al final de esta página."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.scan.outcome }}" != "success" ]; then
+            echo "::warning title=Escaneo incompleto::Algún mercado no se pudo escanear; revisa el resumen."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: momento-b
+          path: reportes/
+          retention-days: 7
