@@ -52,10 +52,13 @@ Cada escaneo de la web (con **Guardar en seguimiento** marcado) guarda las moned
 encontradas, con su precio en ese momento, en un apartado **«Seguimiento 1 de
 octubre»**, **«Seguimiento 2 de octubre»**… Si escaneas varias veces el mismo día,
 se añaden las monedas nuevas y cada una conserva el primer precio del día.
-Los días siguen la vela diaria de Binance, que cambia a las **00:00 UTC** (por
-ejemplo, las 19:00 en UTC-5): un escaneo a las 20:00 de tu hora ya va al día
-siguiente. Por la misma razón, en los gráficos las velas de 1D y 1W llevan su
-fecha UTC; las intradía (15m a 12h) se muestran en tu hora local.
+Cada día del seguimiento es una **vela diaria de Binance**: empieza a las
+**00:00 UTC** y lleva la fecha con que Binance la muestra en tu hora. Por ejemplo,
+en UTC-5 la vela que empieza el 1 de octubre a las 00:00 UTC aparece en Binance
+como la del 30-09 (abre a las 19:00 del 30): un escaneo hecho el 1 de octubre a
+mediodía va a «Seguimiento 30 de septiembre», y desde las 19:00 de ese día, a
+«Seguimiento 1 de octubre». Los gráficos muestran las velas en tu hora, igual que
+Binance.
 
 En la pestaña **Seguimiento** de la web:
 
