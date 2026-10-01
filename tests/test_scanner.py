@@ -538,3 +538,42 @@ def test_stock_symbols_lists_bstocks():
 
     with pytest.raises(RuntimeError):
         web.stock_symbols(Down())
+
+
+def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
+    from momento_b import web
+
+    coin = {"mercado": "spot", "simbolo": "AAAUSDT", "base": "AAA", "quote": "USDT", "precio": 1.5,
+            "hora": "2026-10-01T15:00:00.000Z", "intervalo": "4h", "extra": "se descarta"}
+    (tmp_path / "2026-10-01.json").write_text(json.dumps({"fecha": "2026-10-01", "monedas": [coin]}), encoding="utf-8")
+    (tmp_path / "2026-10-03.json").write_text(json.dumps({"monedas": [coin, {"simbolo": "SIN_MERCADO"}]}), encoding="utf-8")
+    (tmp_path / "roto.json").write_text("{no es json", encoding="utf-8")
+    (tmp_path / "otro.json").write_text(json.dumps({"monedas": []}), encoding="utf-8")  # sin fecha
+    (tmp_path / "README.md").write_text("no es un día", encoding="utf-8")
+
+    days = web.collect_tracking(tmp_path)
+
+    assert [d["fecha"] for d in days] == ["2026-10-03", "2026-10-01"]  # más reciente primero; fecha del nombre
+    assert days[1]["monedas"] == [{k: coin[k] for k in web.COIN_FIELDS}]
+    assert len(days[0]["monedas"]) == 1
+    out = capsys.readouterr().out
+    assert "roto.json" in out and "otro.json" in out
+    assert web.collect_tracking(tmp_path / "no-existe") == []
+
+
+def test_web_cli_writes_tracking_aggregate(tmp_path):
+    from momento_b import web
+
+    folder = tmp_path / "seguimiento"
+    folder.mkdir()
+    (folder / "2026-10-02.json").write_text(json.dumps({"fecha": "2026-10-02", "monedas": [
+        {"mercado": "futures", "simbolo": "BBBUSDT", "base": "BBB", "quote": "USDT", "precio": 2, "hora": "x", "intervalo": "1d"}]}),
+        encoding="utf-8")
+    out = tmp_path / "site"
+    assert web.main([str(out), "--seguimiento", str(folder)]) == 0
+    data = json.loads((out / "seguimiento.json").read_text(encoding="utf-8"))
+    assert [d["fecha"] for d in data["dias"]] == ["2026-10-02"]
+    assert (out / "index.html").exists()
+    # Sin --seguimiento no se escribe (docs/ no debe llevar una copia que se quede vieja)
+    assert web.main([str(tmp_path / "otra")]) == 0
+    assert not (tmp_path / "otra" / "seguimiento.json").exists()
