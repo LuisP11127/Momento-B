@@ -1,0 +1,651 @@
+<title>Momento-B Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Terminal de trading: barra de estado arriba, cuadrícula de mini-gráficos y visor a pantalla completa. */
+:root {
+  --bg: #F2F4F7;
+  --panel: #FFFFFF;
+  --sunken: #E8ECF1;
+  --line: #D8DEE6;
+  --grid: #EEF1F5;
+  --fg: #121821;
+  --muted: #5A6778;
+  --accent: #2457D6;
+  --up: #0B9A6A;
+  --down: #D13850;
+  --ma-fast: #B47C00;
+  --ma-mid: #BE2C8A;
+  --ma-slow: #6744D4;
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --col: 340px;
+  --mini-h: 190px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1017; --panel: #121923; --sunken: #0E141C; --line: #243142; --grid: #19222E;
+    --fg: #E4E9F0; --muted: #8C99AC; --accent: #82A5FF; --up: #2CC088; --down: #F2566D;
+    --ma-fast: #F0B90B; --ma-mid: #EA4CB9; --ma-slow: #A98DFF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1017; --panel: #121923; --sunken: #0E141C; --line: #243142; --grid: #19222E;
+  --fg: #E4E9F0; --muted: #8C99AC; --accent: #82A5FF; --up: #2CC088; --down: #F2566D;
+  --ma-fast: #F0B90B; --ma-mid: #EA4CB9; --ma-slow: #A98DFF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(--font-body); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.up { color: var(--up); }
+.down { color: var(--down); }
+.c-fast { color: var(--ma-fast); }
+.c-mid { color: var(--ma-mid); }
+.c-slow { color: var(--ma-slow); }
+
+.wrap { max-width: 1680px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 32px; display: grid; gap: 16px; }
+@media (min-width: 900px) { .wrap { padding-inline: 28px; } }
+
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 32px; }
+.brand { display: grid; gap: 2px; }
+.brand h1 { margin: 0; font: 700 30px/1.05 var(--font-display); letter-spacing: 0.01em; text-wrap: balance; }
+.cond { margin: 0; font: 500 13.5px/1.3 var(--font-mono); color: var(--muted); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; }
+.meta div { display: grid; gap: 1px; }
+.meta dt { font: 600 11px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.meta dd { margin: 0; font: 500 14px/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+.top .btn { margin-left: auto; }
+
+.btn, .icon-btn, select, input[type="search"] {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; color: var(--fg);
+}
+.btn { padding: 7px 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover, .icon-btn:hover { border-color: var(--muted); }
+.icon-btn { width: 34px; height: 34px; display: inline-grid; place-items: center; cursor: pointer; padding: 0; text-decoration: none; }
+.icon-btn svg, .btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+select, input[type="search"] { padding: 7px 10px; min-width: 0; }
+input[type="search"] { width: 13rem; max-width: 100%; }
+
+.notice { margin: 0; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 8px; background: var(--sunken); color: var(--fg); font-size: 14px; }
+.notice b { font-weight: 600; }
+.notice.error { border-style: solid; border-color: var(--down); }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.toolbar label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.seg { display: inline-flex; padding: 2px; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; }
+.seg button { border: 0; background: transparent; color: var(--muted); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--panel); }
+.seg .count { font-family: var(--font-mono); font-size: 12px; opacity: 0.8; margin-left: 4px; }
+.toolbar .spacer { flex: 1 1 0; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--col)), 1fr)); gap: 12px; }
+.grid.size-s { --col: 250px; --mini-h: 130px; }
+.grid.size-m { --col: 340px; --mini-h: 190px; }
+.grid.size-l { --col: 540px; --mini-h: 300px; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 12px 10px; display: grid; gap: 6px; cursor: pointer; min-width: 0; }
+.card:hover { border-color: var(--muted); }
+.card-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sym { font: 600 19px/1.1 var(--font-display); letter-spacing: 0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sym small { font-size: 0.72em; color: var(--muted); font-weight: 600; margin-left: 1px; }
+.badge { font: 500 10.5px/1 var(--font-mono); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 3px 5px; white-space: nowrap; }
+.card-head .icon-btn { margin-left: auto; width: 30px; height: 30px; flex: none; }
+.figures { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.price { font: 500 16px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.chg { font: 500 13px/1.2 var(--font-mono); }
+.ma-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font: 400 11.5px/1.35 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.ma-legend span b { font-weight: 500; }
+.mini { height: var(--mini-h); border-radius: 4px; overflow: hidden; background: var(--panel); position: relative; }
+.mini .placeholder, .big .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; padding: 8px; }
+.card-foot { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; color: var(--muted); }
+.card-foot b { font: 500 13px var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
+
+.empty { margin: 24px 0; padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
+.foot { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.foot a { color: inherit; }
+
+.viewer { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; gap: 10px;
+  padding-inline: 16px; padding-block: calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-bottom, 0px) + 12px); }
+@media (min-width: 900px) { .viewer { padding-inline: 28px; } }
+.viewer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+.viewer-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.viewer-title .sym { font-size: 28px; }
+.viewer-title .price { font-size: 19px; }
+.viewer-stats { display: flex; flex-wrap: wrap; gap: 2px 18px; font-size: 13.5px; color: var(--muted); }
+.viewer-stats b { font: 500 13.5px var(--font-mono); color: var(--fg); }
+.controls { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.controls .sep { width: 1px; height: 22px; background: var(--line); margin-inline: 2px; }
+.viewer .ma-legend { font-size: 12.5px; gap: 2px 16px; }
+.big { flex: 1 1 auto; min-height: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); position: relative; }
+.hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+body.viewing { overflow: hidden; }
+body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .viewer:not([hidden]) { animation: viewer-in 140ms ease-out; }
+  @keyframes viewer-in { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: none; } }
+}
+@media (max-width: 560px) {
+  .top .btn { margin-left: 0; }
+  .controls { margin-left: 0; }
+  .viewer-title .sym { font-size: 23px; }
+}
+</style>
+<!--BODY-->
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Momento-B</h1>
+      <p class="cond" id="cond"></p>
+    </div>
+    <dl class="meta" id="meta"></dl>
+    <button class="btn" id="load" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4M5 15v4h14v-4"/></svg>
+      Cargar informe
+    </button>
+    <input id="file" type="file" accept=".html,.htm,.json,application/json,text/html" hidden>
+  </header>
+
+  <p class="notice" id="notice" hidden></p>
+
+  <div class="toolbar" id="toolbar">
+    <div class="seg" id="market" role="group" aria-label="Mercado"></div>
+    <label>Orden
+      <select id="sort">
+        <option value="distancia">Más cerca de la MA lenta</option>
+        <option value="cruce">Cruce más reciente</option>
+        <option value="volumen">Mayor volumen 24h</option>
+        <option value="variacion">Mayor variación 24h</option>
+        <option value="simbolo">Símbolo</option>
+      </select>
+    </label>
+    <input id="search" type="search" placeholder="Buscar moneda" aria-label="Buscar moneda" autocomplete="off">
+    <span class="spacer"></span>
+    <label>Tamaño
+      <span class="seg" id="size" role="group" aria-label="Tamaño de los gráficos">
+        <button type="button" data-size="s" aria-pressed="false">S</button>
+        <button type="button" data-size="m" aria-pressed="true">M</button>
+        <button type="button" data-size="l" aria-pressed="false">L</button>
+      </span>
+    </label>
+  </div>
+
+  <main class="grid size-m" id="grid" aria-live="polite"></main>
+  <p class="empty" id="empty" hidden></p>
+
+  <footer class="foot">
+    <span>Datos: API pública de Binance.</span>
+    <span>Gráficos: <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts</a>.</span>
+    <span>No es una recomendación de inversión.</span>
+  </footer>
+</div>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="v-sym" hidden>
+  <div class="viewer-head">
+    <div class="viewer-title">
+      <span class="sym" id="v-sym"></span>
+      <span class="badge" id="v-badge"></span>
+      <span class="price" id="v-price"></span>
+      <span class="chg" id="v-chg"></span>
+    </div>
+    <div class="viewer-stats" id="v-stats"></div>
+    <div class="controls">
+      <button class="icon-btn" id="v-prev" type="button" title="Moneda anterior (←)" aria-label="Moneda anterior">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+      <button class="icon-btn" id="v-next" type="button" title="Moneda siguiente (→)" aria-label="Moneda siguiente">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="icon-btn" id="v-out" type="button" title="Alejar (−)" aria-label="Alejar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <button class="icon-btn" id="v-in" type="button" title="Acercar (+)" aria-label="Acercar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="icon-btn" id="v-fit" type="button" title="Ver todo el historial (0)" aria-label="Ver todo el historial">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <a class="icon-btn" id="v-link" target="_blank" rel="noopener" title="Abrir en Binance" aria-label="Abrir en Binance">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v5H5V7h5"/></svg></a>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="icon-btn" id="v-close" type="button" title="Cerrar (Esc)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+  </div>
+  <div class="ma-legend" id="v-legend"></div>
+  <div class="big" id="big"></div>
+  <p class="hint">Rueda del ratón o pellizco para acercar y alejar · arrastra para moverte en el tiempo · ← → cambia de moneda · Esc cierra</p>
+</div>
+
+<script id="momento-data" type="application/json">__MOMENTO_DATA__</script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const MARKET_NAMES = { spot: "Spot", futures: "Futuros" };
+  const SIZES = { s: 90, m: 120, l: 160 };  // velas visibles en cada mini-gráfico
+  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1 };
+  const minis = new Map();  // elemento .mini -> entrada de gráfico
+  let big = null;
+  let lastFocus = null;
+
+  // ---------- utilidades ----------
+  function h(tag, attrs, ...children) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === "class") el.className = v; else if (k === "text") el.textContent = v; else el.setAttribute(k, v === true ? "" : v);
+    }
+    for (const c of children) if (c != null) el.append(c);
+    return el;
+  }
+  const store = {
+    get(k) { try { return localStorage.getItem("momento-b:" + k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem("momento-b:" + k, v); } catch (e) { /* sin almacenamiento */ } },
+  };
+  function decimals(v) {
+    if (!v) return 2;
+    return Math.max(2, Math.min(10, 4 - Math.floor(Math.log10(Math.abs(v)))));
+  }
+  function fmtPrice(v) {
+    if (v == null || !isFinite(v)) return "-";
+    const d = decimals(v);
+    return v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function fmtPct(v) { return v == null || !isFinite(v) ? "-" : (v >= 0 ? "+" : "") + v.toFixed(2) + "%"; }
+  function fmtVol(v) {
+    if (v == null || !isFinite(v)) return "-";
+    for (const [lim, s] of [[1e9, "B"], [1e6, "M"], [1e3, "K"]]) if (Math.abs(v) >= lim) return (v / lim).toFixed(2) + s;
+    return v.toFixed(0);
+  }
+  function bars(it) { return it.velas_desde_cruce == null ? "-" : it.velas_desde_cruce + (it.cruce_visible === false ? "+" : ""); }
+  function sma(values, period) {
+    const out = new Array(values.length).fill(null);
+    let sum = 0;
+    for (let i = 0; i < values.length; i++) {
+      sum += values[i];
+      if (i >= period) sum -= values[i - period];
+      if (i >= period - 1) out[i] = sum / period;
+    }
+    return out;
+  }
+  function tokens() {
+    const cs = getComputedStyle(document.documentElement);
+    const g = (n) => cs.getPropertyValue(n).trim();
+    return { panel: g("--panel"), grid: g("--grid"), line: g("--line"), fg: g("--fg"), muted: g("--muted"),
+      up: g("--up"), down: g("--down"), ma: [g("--ma-fast"), g("--ma-mid"), g("--ma-slow")], mono: g("--font-mono") };
+  }
+  function binanceUrl(it) {
+    return it.mercado === "futures"
+      ? "https://www.binance.com/es/futures/" + encodeURIComponent(it.simbolo)
+      : "https://www.binance.com/es/trade/" + encodeURIComponent(it.base + "_" + it.quote) + "?type=spot";
+  }
+
+  // ---------- datos ----------
+  function parsePayload(text) {
+    text = text.trim();
+    let obj;
+    if (text.startsWith("{")) {
+      obj = JSON.parse(text);
+    } else {
+      const doc = new DOMParser().parseFromString(text, "text/html");
+      const el = doc.getElementById("momento-data");
+      if (!el) throw new Error("no es un informe de Momento-B");
+      obj = JSON.parse(el.textContent);
+    }
+    if (!obj || typeof obj !== "object" || !obj.mercados) throw new Error("no contiene resultados del scanner");
+    return obj;
+  }
+  function seriesData(it) {
+    if (it._sd) return it._sd;
+    const rows = Array.isArray(it.velas) ? it.velas : [];
+    // Lightweight Charts dibuja en UTC: desplazamos a la hora local del navegador.
+    const time = (ms) => Math.floor(ms / 1000) - new Date(ms).getTimezoneOffset() * 60;
+    const candles = rows.map((k) => ({ time: time(k[0]), open: k[1], high: k[2], low: k[3], close: k[4] }));
+    const closes = rows.map((k) => k[4]);
+    const periods = state.data.medias || [7, 25, 99];
+    const raw = periods.map((p) => sma(closes, p));
+    const mas = raw.map((arr) => arr.flatMap((v, i) => (v == null ? [] : [{ time: candles[i].time, value: v }])));
+    const volume = rows.map((k, i) => ({ time: candles[i].time, value: k[5], up: k[4] >= k[1] }));
+    it._sd = { candles, raw, mas, volume };
+    return it._sd;
+  }
+  function setData(data) {
+    state.data = data;
+    state.items = [];
+    for (const [key, m] of Object.entries(data.mercados)) {
+      for (const it of m.coincidencias || []) state.items.push(Object.assign({ mercado: key }, it));
+    }
+    if (data.orden && !store.get("sort")) state.sort = data.orden;
+    $("sort").value = state.sort;
+    $("toolbar").hidden = false;
+    renderHeader();
+    renderNotice();
+    renderGrid();
+  }
+
+  // ---------- cabecera ----------
+  function renderHeader() {
+    const d = state.data;
+    const [f, m, s] = d.medias || [7, 25, 99];
+    const cond = $("cond");
+    cond.textContent = "";
+    cond.append(h("span", { class: "c-fast", text: "MA" + f }), " > ", h("span", { class: "c-mid", text: "MA" + m }),
+      "  ·  ", h("span", { class: "c-fast", text: "MA" + f }), " < ", h("span", { class: "c-slow", text: "MA" + s }));
+    const meta = $("meta");
+    meta.textContent = "";
+    const add = (dt, dd) => meta.append(h("div", null, h("dt", { text: dt }), h("dd", { text: dd })));
+    add("Velas", d.intervalo + (d.solo_cerradas ? " cerradas" : ""));
+    const when = new Date(d.generado);
+    add("Escaneo", isNaN(when) ? "-" : when.toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" }));
+    for (const [key, mk] of Object.entries(d.mercados)) {
+      add(MARKET_NAMES[key] || mk.nombre || key, (mk.coincidencias || []).length + " de " + (mk.analizadas ?? "?"));
+    }
+    const seg = $("market");
+    seg.textContent = "";
+    const options = [["todos", "Todos", state.items.length]];
+    for (const key of Object.keys(d.mercados)) {
+      options.push([key, MARKET_NAMES[key] || key, state.items.filter((it) => it.mercado === key).length]);
+    }
+    if (!options.some(([k]) => k === state.market)) state.market = "todos";
+    for (const [key, label, n] of options) {
+      const b = h("button", { type: "button", "aria-pressed": String(key === state.market) }, label, h("span", { class: "count", text: String(n) }));
+      b.addEventListener("click", () => { state.market = key; renderHeader(); renderGrid(); });
+      seg.append(b);
+    }
+  }
+  function renderNotice(label, text, isError) {
+    const n = $("notice");
+    n.textContent = "";
+    n.classList.toggle("error", !!isError);
+    if (!label && !text && state.data && state.data.ejemplo) {
+      label = "Datos de ejemplo. ";
+      text = "Monedas inventadas con precios aleatorios. Ejecuta el scanner en tu ordenador y arrastra aquí el informe .html (o el .json) para ver tus resultados.";
+    }
+    n.hidden = !(label || text);
+    if (label) n.append(h("b", { text: label }));
+    if (text) n.append(text);
+  }
+
+  // ---------- cuadrícula ----------
+  const SORTS = {
+    distancia: (a, b) => a.dist_ma_lenta_pct - b.dist_ma_lenta_pct,
+    cruce: (a, b) => (a.cruce_visible === false) - (b.cruce_visible === false) || a.velas_desde_cruce - b.velas_desde_cruce,
+    volumen: (a, b) => (b.volumen_24h || 0) - (a.volumen_24h || 0),
+    variacion: (a, b) => (b.var_24h_pct ?? -Infinity) - (a.var_24h_pct ?? -Infinity),
+    simbolo: (a, b) => a.simbolo.localeCompare(b.simbolo),
+  };
+  function maLegend(it, idx) {
+    const [f, m, s] = state.data.medias || [7, 25, 99];
+    let vals = [it.ma_rapida, it.ma_media, it.ma_lenta];
+    if (idx != null) vals = seriesData(it).raw.map((arr) => arr[idx]);
+    const wrap = h("div", { class: "ma-legend" });
+    [[f, "c-fast"], [m, "c-mid"], [s, "c-slow"]].forEach(([p, cls], i) => {
+      wrap.append(h("span", null, h("b", { class: cls, text: "MA(" + p + ") " }), fmtPrice(vals[i])));
+    });
+    return wrap;
+  }
+  const ICON_EXPAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
+  function card(it, index) {
+    const [f, m, s] = state.data.medias || [7, 25, 99];
+    const expand = h("button", { class: "icon-btn", type: "button", title: "Ampliar", "aria-label": "Ampliar " + it.simbolo });
+    expand.innerHTML = ICON_EXPAND;
+    const chg = it.var_24h_pct;
+    const mini = h("div", { class: "mini" });
+    mini.dataset.index = String(index);
+    const el = h("article", { class: "card", tabindex: "0", "aria-label": it.simbolo },
+      h("div", { class: "card-head" },
+        h("span", { class: "sym" }, it.base || it.simbolo, h("small", { text: it.quote ? "/" + it.quote : "" })),
+        h("span", { class: "badge", text: MARKET_NAMES[it.mercado] || it.mercado }),
+        expand),
+      h("div", { class: "figures" },
+        h("span", { class: "price", text: fmtPrice(it.precio) }),
+        h("span", { class: "chg " + (chg >= 0 ? "up" : "down"), text: fmtPct(chg) + " 24h" })),
+      maLegend(it),
+      mini,
+      h("div", { class: "card-foot" },
+        h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
+        h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
+        h("span", null, "Vol ", h("b", { text: fmtVol(it.volumen_24h) }))));
+    el.addEventListener("click", () => openViewer(index));
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openViewer(index); } });
+    return el;
+  }
+  const observer = "IntersectionObserver" in window
+    ? new IntersectionObserver((entries) => {
+        for (const e of entries) if (e.isIntersecting) { observer.unobserve(e.target); createMini(e.target); }
+      }, { rootMargin: "400px 0px" })
+    : null;
+  function renderGrid() {
+    for (const entry of minis.values()) entry.chart.remove();
+    minis.clear();
+    if (observer) observer.disconnect();
+    const grid = $("grid");
+    grid.textContent = "";
+    const q = state.q.trim().toUpperCase();
+    state.view = state.items
+      .filter((it) => state.market === "todos" || it.mercado === state.market)
+      .filter((it) => !q || it.simbolo.toUpperCase().includes(q))
+      .sort(SORTS[state.sort] || SORTS.distancia);
+    state.view.forEach((it, i) => {
+      const el = card(it, i);
+      grid.append(el);
+      const mini = el.querySelector(".mini");
+      if (observer) observer.observe(mini); else createMini(mini);
+    });
+    const empty = $("empty");
+    empty.hidden = state.view.length > 0;
+    empty.textContent = state.items.length === 0
+      ? "Ninguna moneda cumple la condición en este escaneo."
+      : "Ninguna moneda coincide con el filtro.";
+  }
+
+  // ---------- gráficos ----------
+  function chartOptions(t, isBig) {
+    return {
+      autoSize: true,
+      localization: { locale: "es-ES" },
+      layout: { background: { type: "solid", color: t.panel }, textColor: t.muted, fontFamily: t.mono, fontSize: isBig ? 12 : 10, attributionLogo: false },
+      grid: { vertLines: { color: t.grid }, horzLines: { color: t.grid } },
+      rightPriceScale: { borderColor: t.line, entireTextOnly: true, scaleMargins: isBig ? { top: 0.06, bottom: 0.24 } : { top: 0.1, bottom: 0.08 } },
+      timeScale: { borderColor: t.line, timeVisible: true, secondsVisible: false, rightOffset: isBig ? 6 : 2, fixLeftEdge: !isBig },
+      crosshair: isBig ? { mode: LightweightCharts.CrosshairMode.Normal }
+        : { vertLine: { visible: false, labelVisible: false }, horzLine: { visible: false, labelVisible: false } },
+      handleScroll: isBig, handleScale: isBig,
+    };
+  }
+  function applyColors(entry, t) {
+    entry.chart.applyOptions(chartOptions(t, entry.isBig));
+    entry.candles.applyOptions({ upColor: t.up, downColor: t.down, wickUpColor: t.up, wickDownColor: t.down, borderVisible: false });
+    entry.mas.forEach((s, i) => s.applyOptions({ color: t.ma[i] }));
+    if (entry.volume) {
+      const alpha = (c) => c + (c.startsWith("#") && c.length === 7 ? "66" : "");
+      entry.volume.setData(seriesData(entry.item).volume.map((v) => ({ time: v.time, value: v.value, color: alpha(v.up ? t.up : t.down) })));
+    }
+  }
+  function buildChart(el, it, isBig) {
+    const sd = seriesData(it);
+    if (!window.LightweightCharts || sd.candles.length === 0) {
+      el.append(h("div", { class: "placeholder", text: window.LightweightCharts ? "Sin velas en este archivo" : "No se pudo cargar la librería de gráficos" }));
+      return null;
+    }
+    const t = tokens();
+    const chart = LightweightCharts.createChart(el, chartOptions(t, isBig));
+    const d = decimals(it.precio);
+    const priceFormat = { type: "price", precision: d, minMove: Math.pow(10, -d) };
+    const candles = chart.addCandlestickSeries({ priceFormat });
+    candles.setData(sd.candles);
+    const mas = sd.mas.map((data) => {
+      const s = chart.addLineSeries({ lineWidth: isBig ? 2 : 1, priceLineVisible: false, lastValueVisible: isBig, crosshairMarkerVisible: false, priceFormat });
+      s.setData(data);
+      return s;
+    });
+    let volume = null;
+    if (isBig) {
+      volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol", lastValueVisible: false, priceLineVisible: false });
+      chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    }
+    const entry = { chart, candles, mas, volume, item: it, isBig };
+    applyColors(entry, t);
+    const n = sd.candles.length;
+    const visible = isBig ? 150 : SIZES[state.size];
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - visible), to: n - 1 + (isBig ? 6 : 2) });
+    return entry;
+  }
+  function createMini(el) {
+    const it = state.view[Number(el.dataset.index)];
+    if (!it || minis.has(el)) return;
+    const entry = buildChart(el, it, false);
+    if (entry) minis.set(el, entry);
+  }
+  function refreshTheme() {
+    const t = tokens();
+    for (const entry of minis.values()) applyColors(entry, t);
+    if (big) applyColors(big, t);
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", refreshTheme);
+  new MutationObserver(refreshTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
+
+  // ---------- visor ampliado ----------
+  function updateLegend(idx) {
+    const it = state.view[state.current];
+    const legend = $("v-legend");
+    legend.replaceWith(Object.assign(maLegend(it, idx), { id: "v-legend" }));
+    const sd = seriesData(it);
+    const c = sd.candles[idx];
+    if (c) {
+      const ohlc = h("span", null);
+      for (const [k, v] of [["A", c.open], ["M", c.high], ["m", c.low], ["C", c.close]]) {
+        ohlc.append(h("b", { text: k + " " }), fmtPrice(v), "  ");
+      }
+      $("v-legend").prepend(ohlc);
+    }
+  }
+  function openViewer(index) {
+    if (!state.view.length) return;
+    index = (index + state.view.length) % state.view.length;
+    const viewer = $("viewer");
+    if (viewer.hidden) lastFocus = document.activeElement;
+    closeBig();
+    state.current = index;
+    const it = state.view[index];
+    const [f, m, s] = state.data.medias || [7, 25, 99];
+    $("v-sym").textContent = "";
+    $("v-sym").append(it.base || it.simbolo, h("small", { text: it.quote ? "/" + it.quote : "" }));
+    $("v-badge").textContent = MARKET_NAMES[it.mercado] || it.mercado;
+    $("v-price").textContent = fmtPrice(it.precio);
+    const chg = $("v-chg");
+    chg.textContent = fmtPct(it.var_24h_pct) + " 24h";
+    chg.className = "chg " + (it.var_24h_pct >= 0 ? "up" : "down");
+    const stats = $("v-stats");
+    stats.textContent = "";
+    stats.append(
+      h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
+      h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
+      h("span", null, "Vol 24h ", h("b", { text: fmtVol(it.volumen_24h) })),
+      h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
+    const link = $("v-link");
+    link.hidden = !!state.data.ejemplo;
+    link.href = binanceUrl(it);
+    viewer.hidden = false;
+    document.body.classList.add("viewing");
+    const el = $("big");
+    el.textContent = "";
+    big = buildChart(el, it, true);
+    const last = seriesData(it).candles.length - 1;
+    updateLegend(last);
+    if (big) {
+      big.chart.subscribeCrosshairMove((p) => {
+        const idx = p && p.logical != null ? Math.round(p.logical) : last;
+        updateLegend(idx >= 0 && idx <= last ? idx : last);
+      });
+    }
+    $("v-close").focus({ preventScroll: true });
+  }
+  function closeBig() {
+    if (big) { big.chart.remove(); big = null; }
+  }
+  function closeViewer() {
+    closeBig();
+    $("viewer").hidden = true;
+    document.body.classList.remove("viewing");
+    const target = lastFocus && document.contains(lastFocus) ? lastFocus : $("grid").children[state.current];
+    if (target) target.focus({ preventScroll: false });
+  }
+  function zoom(factor) {
+    if (!big) return;
+    const ts = big.chart.timeScale();
+    const r = ts.getVisibleLogicalRange();
+    if (!r) return;
+    const n = seriesData(big.item).candles.length;
+    const width = Math.min(n + 40, Math.max(12, (r.to - r.from) * factor));
+    ts.setVisibleLogicalRange({ from: r.to - width, to: r.to });
+  }
+  $("v-close").addEventListener("click", closeViewer);
+  $("v-prev").addEventListener("click", () => openViewer(state.current - 1));
+  $("v-next").addEventListener("click", () => openViewer(state.current + 1));
+  $("v-in").addEventListener("click", () => zoom(0.7));
+  $("v-out").addEventListener("click", () => zoom(1.45));
+  $("v-fit").addEventListener("click", () => big && big.chart.timeScale().fitContent());
+  document.addEventListener("keydown", (e) => {
+    if ($("viewer").hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+    const keys = { Escape: closeViewer, ArrowLeft: () => openViewer(state.current - 1), ArrowRight: () => openViewer(state.current + 1),
+      "+": () => zoom(0.7), "=": () => zoom(0.7), "-": () => zoom(1.45), "0": () => big && big.chart.timeScale().fitContent() };
+    if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
+  });
+
+  // ---------- controles ----------
+  $("sort").addEventListener("change", (e) => { state.sort = e.target.value; store.set("sort", state.sort); renderGrid(); });
+  $("search").addEventListener("input", (e) => { state.q = e.target.value; renderGrid(); });
+  function setSize(size) {
+    state.size = SIZES[size] ? size : "m";
+    $("grid").className = "grid size-" + state.size;
+    for (const b of $("size").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.size === state.size));
+    store.set("size", state.size);
+    for (const [el, entry] of minis) {
+      const n = seriesData(entry.item).candles.length;
+      entry.chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - SIZES[state.size]), to: n + 1 });
+    }
+  }
+  for (const b of $("size").querySelectorAll("button")) b.addEventListener("click", () => setSize(b.dataset.size));
+
+  async function loadFile(file) {
+    if (!file) return;
+    try {
+      setData(parsePayload(await file.text()));
+    } catch (err) {
+      const reason = err && err.message ? err.message.charAt(0).toUpperCase() + err.message.slice(1) : "Formato desconocido";
+      renderNotice("No se pudo cargar el archivo. ", reason + ". Usa el .html o el .json que genera el scanner.", true);
+    }
+  }
+  $("load").addEventListener("click", () => $("file").click());
+  $("file").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
+  document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("dragging"); });
+  document.addEventListener("dragleave", (e) => { if (!e.relatedTarget) document.body.classList.remove("dragging"); });
+  document.addEventListener("drop", (e) => {
+    e.preventDefault();
+    document.body.classList.remove("dragging");
+    loadFile(e.dataTransfer && e.dataTransfer.files[0]);
+  });
+
+  // ---------- arranque ----------
+  state.sort = store.get("sort") || state.sort;
+  setSize(store.get("size") || "m");
+  let initial = null;
+  try { initial = JSON.parse($("momento-data").textContent); } catch (e) { initial = null; }
+  if (initial && initial.mercados) {
+    setData(initial);
+  } else {
+    $("toolbar").hidden = true;
+    renderNotice("Sin resultados. ", "Pulsa «Cargar informe» y elige el .html o el .json que genera el scanner.");
+  }
+  if (!window.LightweightCharts) {
+    renderNotice("Sin gráficos. ", "No se pudo cargar la librería de gráficos; revisa tu conexión a internet.", true);
+  }
+})();
+</script>

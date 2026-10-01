@@ -34,6 +34,9 @@ python -m momento_b --max-velas 5    # solo cruces MA7/MA25 de las últimas 5 ve
 python -m momento_b --csv senales.csv --json senales.json
 ```
 
+Al terminar, el scanner abre en el navegador una página con los gráficos de
+las monedas encontradas (ver [Gráficos interactivos](#gráficos-interactivos)).
+
 Ejemplo de salida (datos ilustrativos):
 
 ```
@@ -71,9 +74,33 @@ SPOT (USDT) — 57 coincidencias de 402 analizadas
 | `--incluir-stables` | no | No descarta stablecoins/fiat como base (USDC, FDUSD, EUR...). |
 | `-o, --orden` | `distancia` | `distancia` (a la MA99), `cruce` (más reciente), `volumen`, `variacion`, `simbolo`. |
 | `--top N` | — | Muestra solo las N primeras de cada mercado. |
-| `--csv / --json ARCHIVO` | — | Exporta los resultados. |
+| `--csv / --json ARCHIVO` | — | Exporta los resultados (el JSON incluye las velas de cada moneda). |
+| `--html ARCHIVO` | `reportes/…` | Ruta del informe con los gráficos. |
+| `--sin-grafico` | no | No genera el informe con los gráficos. |
+| `--no-abrir` | no | Genera el informe pero no lo abre en el navegador. |
 | `--workers N` | `8` | Descargas en paralelo. |
 | `--spot-url / --futures-url` | API oficial | URL base alternativa de la API. |
+
+## Gráficos interactivos
+
+Después de cada escaneo se genera `reportes/momento-b_<intervalo>_<fecha>.html`
+y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
+
+- Una tarjeta por moneda con su gráfico de velas y las tres medias, con los
+  colores de Binance: MA(7) amarillo, MA(25) rosa y MA(99) morado.
+- **Tamaño S / M / L** cambia el tamaño de todas las tarjetas.
+- Al pulsar una tarjeta, o el botón de ampliar, el gráfico se abre a pantalla completa:
+  - rueda del ratón o pellizco para acercar y alejar, y arrastrar para moverse en el tiempo;
+  - botones `−` / `+` y «ver todo el historial» (teclas `-`, `+` y `0`);
+  - al pasar el ratón se ven apertura, máximo, mínimo, cierre y el valor de cada media en esa vela;
+  - `←` / `→` pasan a la moneda anterior o siguiente y `Esc` cierra;
+  - enlace directo al par en Binance.
+- Filtros por mercado, búsqueda por símbolo y los mismos órdenes que en la terminal.
+- «Cargar informe» (o arrastrar un archivo a la página) abre otro informe `.html`
+  o un `.json` generado con `--json`.
+
+Necesita conexión a internet para cargar la librería de gráficos
+([TradingView Lightweight Charts](https://www.tradingview.com/lightweight-charts/)).
 
 ## Qué pares se analizan
 

@@ -5,6 +5,7 @@ Con los periodos por defecto: MA(7) > MA(25) y MA(7) < MA(99).
 
 from __future__ import annotations
 
+import math
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -37,7 +38,7 @@ class ScanConfig:
     closed_only: bool = False
     include_stables: bool = False
     workers: int = 8
-    extra_history: int = 100  # velas extra para ver hace cuánto fue el cruce
+    extra_history: int = 200  # velas extra para ver hace cuánto fue el cruce y para el gráfico
 
     @property
     def klines_limit(self) -> int:
@@ -75,6 +76,8 @@ class Signal:
     cross_seen: bool
     change_24h_pct: Optional[float]
     quote_volume_24h: Optional[float]
+    # (apertura ms, open, high, low, close, volumen) de todas las velas descargadas, para el gráfico
+    candles: tuple[tuple[int, float, float, float, float, float], ...] = field(default=(), repr=False, compare=False)
 
 
 @dataclass
@@ -87,6 +90,16 @@ class ScanResult:
     skipped_volume: int = 0
     insufficient_data: int = 0
     errors: list[tuple[str, str]] = field(default_factory=list)
+
+
+# Órdenes disponibles para mostrar o exportar las señales.
+SORT_KEYS = {
+    "distancia": lambda s: s.dist_to_slow_pct,
+    "cruce": lambda s: (not s.cross_seen, s.bars_since_cross),
+    "volumen": lambda s: -(s.quote_volume_24h or 0.0),
+    "variacion": lambda s: -(s.change_24h_pct if s.change_24h_pct is not None else -math.inf),
+    "simbolo": lambda s: s.symbol,
+}
 
 
 def evaluate(closes: Sequence[float], periods: tuple[int, int, int] = DEFAULT_PERIODS) -> Optional[MASnapshot]:
@@ -213,6 +226,9 @@ def scan_market(
                     cross_seen=snap.cross_seen,
                     change_24h_pct=change,
                     quote_volume_24h=volume,
+                    candles=tuple(
+                        (int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])) for k in klines
+                    ),
                 )
             )
     finally:

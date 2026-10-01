@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from momento_b import cli
+from momento_b import cli, report
 from momento_b.binance import FUTURES, SPOT, BinanceError, BinanceFatalError, WeightLimiter
 from momento_b.indicators import bars_above, sma
 from momento_b.scanner import ScanConfig, evaluate, scan_market, select_symbols
@@ -158,7 +158,9 @@ def test_scan_market_finds_only_matching_symbols():
     assert result.total_symbols == 4
     assert result.analyzed == 3
     assert result.insufficient_data == 1
-    assert {r[1:] for r in client.requested} == {("1h", 199)}
+    assert {r[1:] for r in client.requested} == {("1h", 299)}
+    assert len(signal.candles) == len(REBOUND)
+    assert signal.candles[-1][1:5] == (REBOUND[-1],) * 4
 
 
 def test_scan_market_min_volume_skips_requests():
@@ -177,7 +179,7 @@ def test_scan_market_closed_only_drops_open_candle():
     result = scan_market(client, ScanConfig(workers=1, closed_only=True))
     assert [s.symbol for s in result.signals] == ["AAAUSDT"]
     assert result.signals[0].price == 10_000  # el precio mostrado sigue siendo el actual
-    assert client.requested[-1][2] == 200  # pide una vela extra para compensar la que descarta
+    assert client.requested[-1][2] == 300  # pide una vela extra para compensar la que descarta
 
 
 def test_scan_market_max_bars_filter():
@@ -225,38 +227,77 @@ def test_format_price_keeps_significant_digits():
     assert cli.format_price(0.0000123456) == "0.000012346"
 
 
-def test_cli_end_to_end(monkeypatch, tmp_path, capsys):
-    futures_klines = {"AAAUSDT": make_klines(REBOUND)}
-    clients = {
+def both_clients():
+    return {
         "spot": spot_client(),
-        "futures": FakeClient(FUTURES, EXCHANGE_INFO_FUTURES, futures_klines,
+        "futures": FakeClient(FUTURES, EXCHANGE_INFO_FUTURES, {"AAAUSDT": make_klines(REBOUND)},
                               [{"symbol": "AAAUSDT", "quoteVolume": "1e8", "priceChangePercent": "2"}]),
     }
+
+
+@pytest.fixture
+def opened(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli.webbrowser, "open", calls.append)
+    return calls
+
+
+def test_cli_end_to_end(monkeypatch, tmp_path, capsys, opened):
+    clients = both_clients()
     monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
     out_json = tmp_path / "res.json"
     out_csv = tmp_path / "res.csv"
+    out_html = tmp_path / "graficos.html"
 
-    code = cli.main(["-i", "1d", "--json", str(out_json), "--csv", str(out_csv)])
+    code = cli.main(["-i", "1d", "--json", str(out_json), "--csv", str(out_csv), "--html", str(out_html), "--no-abrir"])
 
     assert code == 0
     stdout = capsys.readouterr().out
     assert "SPOT (USDT) — 1 coincidencias de 3 analizadas" in stdout
     assert "FUTURES USDⓈ-M (USDT) — 1 coincidencias de 1 analizadas" in stdout
     assert "En spot y futuros a la vez (1): AAA" in stdout
+    assert f"Gráficos interactivos: {out_html}" in stdout
     data = json.loads(out_json.read_text())
     assert data["intervalo"] == "1d"
-    assert [s["simbolo"] for s in data["mercados"]["futures"]["coincidencias"]] == ["AAAUSDT"]
+    futures = data["mercados"]["futures"]["coincidencias"]
+    assert [s["simbolo"] for s in futures] == ["AAAUSDT"]
+    assert len(futures[0]["velas"]) == len(REBOUND)
     assert out_csv.read_text().count("AAAUSDT") == 2
+    html = out_html.read_text()
+    assert html.startswith("<!doctype html>")
+    assert "__MOMENTO_DATA__" not in html
+    assert opened == []
 
 
-def test_cli_reports_blocked_market(monkeypatch, capsys):
+def test_cli_writes_report_in_reportes_and_opens_it(monkeypatch, tmp_path, opened):
+    clients = both_clients()
+    monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
+    monkeypatch.chdir(tmp_path)
+
+    assert cli.main(["-i", "1h"]) == 0
+
+    reports = list((tmp_path / "reportes").glob("momento-b_1h_*.html"))
+    assert len(reports) == 1
+    assert opened == [reports[0].resolve().as_uri()]
+
+
+def test_cli_without_chart(monkeypatch, tmp_path, opened):
+    clients = both_clients()
+    monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["--sin-grafico"]) == 0
+    assert not (tmp_path / "reportes").exists()
+    assert opened == []
+
+
+def test_cli_reports_blocked_market(monkeypatch, capsys, opened):
     class Blocked(FakeClient):
         def exchange_info(self):
             raise BinanceFatalError("451 ubicación restringida")
 
     clients = {"spot": spot_client(), "futures": Blocked(FUTURES, {}, {})}
     monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
-    assert cli.main([]) == 1
+    assert cli.main(["--sin-grafico"]) == 1
     captured = capsys.readouterr()
     assert "451 ubicación restringida" in captured.err
     assert "SPOT (USDT)" in captured.out
@@ -265,3 +306,26 @@ def test_cli_reports_blocked_market(monkeypatch, capsys):
 def test_cli_validates_periods():
     with pytest.raises(SystemExit):
         cli.main(["--mas", "25", "7", "99"])
+
+
+def embedded_payload(html):
+    start = html.index('<script id="momento-data" type="application/json">') + len('<script id="momento-data" type="application/json">')
+    return json.loads(html[start:html.index("</script>", start)])
+
+
+def test_report_embeds_payload_safely():
+    result = scan_market(spot_client(), ScanConfig(workers=1))
+    from datetime import datetime, timezone
+
+    payload = report.build_payload([result], datetime(2026, 10, 1, 12, tzinfo=timezone.utc))
+    payload["mercados"]["spot"]["coincidencias"][0]["simbolo"] = "</script><b>X"
+
+    html = report.render_report(payload)
+    assert "</script><b>" not in html
+    assert embedded_payload(html) == payload
+    assert payload["mercados"]["spot"]["coincidencias"][0]["velas"][0][0] > 0
+
+    fragment = report.render_report(payload, standalone=False)
+    assert fragment.startswith("<title>Momento-B Scanner</title>")
+    assert "<!doctype" not in fragment and "<body>" not in fragment
+    assert embedded_payload(fragment) == payload

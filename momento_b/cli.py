@@ -7,21 +7,17 @@ import csv
 import json
 import math
 import sys
+import webbrowser
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, Sequence
 
 from .binance import MARKETS, BinanceClient, BinanceError
-from .scanner import ScanConfig, ScanResult, Signal, scan_market
+from .report import build_payload, signal_to_dict, write_report
+from .scanner import SORT_KEYS, ScanConfig, ScanResult, Signal, scan_market
 
 INTERVALS = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]
-
-SORT_KEYS = {
-    "distancia": lambda s: s.dist_to_slow_pct,
-    "cruce": lambda s: (not s.cross_seen, s.bars_since_cross),
-    "volumen": lambda s: -(s.quote_volume_24h or 0.0),
-    "variacion": lambda s: -(s.change_24h_pct if s.change_24h_pct is not None else -math.inf),
-    "simbolo": lambda s: s.symbol,
-}
+REPORTS_DIR = Path("reportes")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -53,7 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
                         "volumen, variación 24h o símbolo")
     p.add_argument("--top", type=int, metavar="N", help="mostrar solo las N primeras de cada mercado")
     p.add_argument("--csv", metavar="ARCHIVO", help="guardar los resultados en CSV")
-    p.add_argument("--json", metavar="ARCHIVO", help="guardar los resultados en JSON")
+    p.add_argument("--json", metavar="ARCHIVO", help="guardar los resultados en JSON (incluye las velas)")
+    p.add_argument("--html", metavar="ARCHIVO",
+                   help="ruta del informe con los gráficos (por defecto: reportes/momento-b_<intervalo>_<fecha>.html)")
+    p.add_argument("--sin-grafico", action="store_true", help="no generar el informe con los gráficos")
+    p.add_argument("--no-abrir", action="store_true", help="generar el informe pero no abrirlo en el navegador")
     p.add_argument("--workers", type=int, default=8, help="descargas en paralelo (por defecto: 8)")
     p.add_argument("--spot-url", help="URL base de la API spot (por defecto: https://api.binance.com)")
     p.add_argument("--futures-url", help="URL base de la API de futuros (por defecto: https://fapi.binance.com)")
@@ -154,25 +154,6 @@ CSV_FIELDS = [
 ]
 
 
-def signal_to_dict(signal: Signal, interval: str) -> dict:
-    return {
-        "mercado": signal.market,
-        "intervalo": interval,
-        "simbolo": signal.symbol,
-        "base": signal.base,
-        "quote": signal.quote,
-        "precio": signal.price,
-        "ma_rapida": signal.ma_fast,
-        "ma_media": signal.ma_mid,
-        "ma_lenta": signal.ma_slow,
-        "dist_ma_lenta_pct": round(signal.dist_to_slow_pct, 4),
-        "velas_desde_cruce": signal.bars_since_cross,
-        "cruce_visible": signal.cross_seen,
-        "var_24h_pct": signal.change_24h_pct,
-        "volumen_24h": signal.quote_volume_24h,
-    }
-
-
 def export_csv(path: str, results: Sequence[ScanResult], order: str) -> None:
     rows = [signal_to_dict(s, r.config.interval) for r in results for s in sorted(r.signals, key=SORT_KEYS[order])]
     with open(path, "w", newline="", encoding="utf-8") as fh:
@@ -181,23 +162,9 @@ def export_csv(path: str, results: Sequence[ScanResult], order: str) -> None:
         writer.writerows(rows)
 
 
-def export_json(path: str, results: Sequence[ScanResult], order: str, generated_at: datetime) -> None:
-    config = results[0].config
-    payload = {
-        "generado": generated_at.isoformat(timespec="seconds"),
-        "intervalo": config.interval,
-        "medias": list(config.periods),
-        "condicion": f"MA{config.periods[0]} > MA{config.periods[1]} y MA{config.periods[0]} < MA{config.periods[2]}",
-        "mercados": {
-            r.market.key: {
-                "analizadas": r.analyzed,
-                "coincidencias": [signal_to_dict(s, config.interval) for s in sorted(r.signals, key=SORT_KEYS[order])],
-            }
-            for r in results
-        },
-    }
+def export_json(path: str, payload: dict) -> None:
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump(payload, fh, ensure_ascii=False, indent=2)
+        json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
 
 
 def _progress_printer(label: str):
@@ -262,11 +229,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if common:
             print(f"En spot y futuros a la vez ({len(common)}): {', '.join(common)}\n")
 
-    if results and args.csv:
+    if not results:
+        return 1
+
+    payload = build_payload(results, started, args.orden)
+    if args.csv:
         export_csv(args.csv, results, args.orden)
         print(f"Resultados guardados en {args.csv}")
-    if results and args.json:
-        export_json(args.json, results, args.orden, started)
+    if args.json:
+        export_json(args.json, payload)
         print(f"Resultados guardados en {args.json}")
+    if not args.sin_grafico:
+        default_name = f"momento-b_{config.interval}_{started.astimezone():%Y%m%d-%H%M}.html"
+        path = write_report(Path(args.html) if args.html else REPORTS_DIR / default_name, payload)
+        print(f"Gráficos interactivos: {path}")
+        if not args.no_abrir:
+            webbrowser.open(path.resolve().as_uri())
 
     return 1 if failed else 0
