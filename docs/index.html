@@ -475,10 +475,9 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (tf in it._sd) return it._sd[tf];
     const rows = rowsFor(it, tf);
     if (!rows) return (it._sd[tf] = null);
-    // Lightweight Charts dibuja en UTC. Las velas intradía se pasan a la hora local; las de 1D o más se dejan
-    // en UTC, porque Binance las abre a las 00:00 UTC y así cada vela lleva su fecha.
-    const local = (TF_MINUTES[tf] || 0) < 1440;
-    const time = (ms) => Math.floor(ms / 1000) - (local ? new Date(ms).getTimezoneOffset() * 60 : 0);
+    // Lightweight Charts dibuja en UTC: se pasa a la hora local, como muestra las velas Binance en tu zona
+    // horaria (en UTC-5, la vela diaria que abre el 1 oct a las 00:00 UTC aparece como «30-09 19:00»).
+    const time = (ms) => Math.floor(ms / 1000) - new Date(ms).getTimezoneOffset() * 60;
     const candles = rows.map((k) => ({ time: time(k[0]), open: k[1], high: k[2], low: k[3], close: k[4] }));
     const closes = rows.map((k) => k[4]);
     const periods = state.data.medias || [7, 25, 99];
@@ -1243,10 +1242,14 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const saveLocalDays = (days) => store.set("seguimiento", JSON.stringify(days));
   const deletedDays = () => readJSON("seguimiento-borrados", {});
   const saveDeletedDays = (days) => store.set("seguimiento-borrados", JSON.stringify(days));
-  // Los días del seguimiento siguen la vela diaria de Binance: cambian a las 00:00 UTC, no a medianoche local.
-  function todayKey(d = new Date()) {
-    return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0");
+  // Cada día del seguimiento es una vela diaria de Binance: empieza a las 00:00 UTC y lleva la fecha con que
+  // Binance la muestra en tu hora (en UTC-5, la vela que abre el 1 oct a las 00:00 UTC es la «30-09»).
+  function dayKeyOf(ms) {
+    const t = new Date(ms);
+    const open = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
+    return open.getFullYear() + "-" + String(open.getMonth() + 1).padStart(2, "0") + "-" + String(open.getDate()).padStart(2, "0");
   }
+  function todayKey(d = new Date()) { return dayKeyOf(d.getTime()); }
   function dayDate(fecha) { const [y, m, d] = fecha.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); }
   function dayTitle(fecha) {
     const date = dayDate(fecha);
@@ -1284,6 +1287,23 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     for (const [fecha, day] of Object.entries(track.remote)) if (!deleted[fecha]) out[fecha] = day;
     for (const [fecha, day] of Object.entries(local)) out[fecha] = out[fecha] ? mergeDay(out[fecha], day) : day;
     return Object.values(out).filter((d) => d.monedas && d.monedas.length).sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  }
+  // Coloca cada moneda guardada en este navegador en el día de su vela (los días guardados con un criterio
+  // anterior se corrigen solos); lo que cambia de día queda pendiente de subir a su archivo correcto.
+  function normalizeLocalDays() {
+    const days = localDays(), out = {};
+    let changed = false;
+    for (const day of Object.values(days)) {
+      for (const c of day.monedas || []) {
+        const ms = Date.parse(c.hora);
+        const key = isFinite(ms) ? dayKeyOf(ms) : day.fecha;
+        const moved = key !== day.fecha;
+        if (moved) changed = true;
+        const pending = !!(day.pendiente || moved || (out[key] && out[key].pendiente));
+        out[key] = Object.assign(mergeDay(out[key], { fecha: key, monedas: [c] }), { pendiente: pending });
+      }
+    }
+    if (changed) saveLocalDays(out);
   }
   function recordScan(mercados, interval) {
     const now = new Date(), fecha = todayKey(now), hora = now.toISOString();
@@ -1741,7 +1761,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function renderTracking() {
     renderTrackMarket();
     renderSync();
-    $("track-note").textContent = "Cada día sigue la vela diaria de Binance: cambia a las 00:00 UTC (las " + dayChangeLocal() + " en tu hora).";
+    $("track-note").textContent = "Cada seguimiento es una vela diaria de Binance: empieza a las 00:00 UTC (las " + dayChangeLocal() +
+      " en tu hora) y lleva la fecha con que Binance la muestra en tu hora.";
     $("track-sort").value = track.sort;
     const list = $("track-days");
     list.textContent = "";
@@ -1822,6 +1843,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   $("gh-form").addEventListener("submit", connectGitHub);
   $("gh-cancel").addEventListener("click", () => showGhForm(false));
   track.sort = TRACK_SORTS[store.get("seguimiento-orden")] ? store.get("seguimiento-orden") : track.sort;
+  normalizeLocalDays();
 
   // ---------- arranque ----------
   state.sort = store.get("sort") || state.sort;
