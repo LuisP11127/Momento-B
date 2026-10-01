@@ -175,19 +175,23 @@ body.tracking .scan-only { display: none !important; }
 .coins .coin { font: 600 15px var(--font-display); letter-spacing: 0.01em; }
 .coins .coin small { font-size: 0.78em; color: var(--muted); margin-right: 8px; }
 .coins .muted { color: var(--muted); font-size: 13px; }
+.coins .rng { margin-left: 6px; font-size: 12px; }
 .chgbar { display: inline-block; position: relative; width: 52px; height: 6px; margin-left: 10px; vertical-align: middle; background: var(--grid); border-radius: 3px; overflow: hidden; }
 .chgbar i { position: absolute; top: 0; bottom: 0; left: 0; background: currentColor; border-radius: 3px; }
 /* En el móvil cada moneda ocupa dos líneas: moneda y variación arriba, precio entonces y ahora debajo. */
 @media (max-width: 640px) {
   .coins thead, .coins .col-scan, .chgbar { display: none; }
-  .coins tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "coin pct" "then now"; gap: 2px 12px; padding: 9px 12px; border-bottom: 1px solid var(--grid); }
+  .coins tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "coin pct" "then now" "low high"; gap: 2px 12px; padding: 9px 12px; border-bottom: 1px solid var(--grid); }
   .coins tbody tr:last-child { border-bottom: 0; }
   .coins td { padding: 0; border: 0; }
   .coins .c-coin { grid-area: coin; }
   .coins .c-pct { grid-area: pct; font-weight: 500; }
   .coins .c-then { grid-area: then; text-align: left; font-size: 12.5px; }
   .coins .c-now { grid-area: now; font-size: 12.5px; }
-  .coins .c-then::before, .coins .c-now::before { content: attr(data-label) " "; color: var(--muted); font-family: var(--font-body); }
+  .coins .c-low { grid-area: low; text-align: left; font-size: 12.5px; }
+  .coins .c-high { grid-area: high; font-size: 12.5px; }
+  .coins .rng { font-size: 11.5px; }
+  .coins .c-then::before, .coins .c-now::before, .coins .c-low::before, .coins .c-high::before { content: attr(data-label) " "; color: var(--muted); font-family: var(--font-body); }
 }
 .empty { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
 .foot { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; }
@@ -1224,7 +1228,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     moneda: (a, b) => a.simbolo.localeCompare(b.simbolo),
     escaneo: (a, b) => a.orden - b.orden,
   };
-  const track = { remote: {}, prices: {}, market: "todos", sort: "subida", timer: null, sync: "", syncError: "", busy: false };
+  const track = { remote: {}, prices: {}, market: "todos", sort: "subida", timer: null, sync: "", syncError: "", busy: false, remoteLoaded: false };
   const GH_API = "https://api.github.com";
   class GhError extends Error {
     constructor(status, message) { super(message); this.status = status; }
@@ -1421,6 +1425,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       let changed = false;
       for (const fecha of Object.keys(deleted)) if (!days[fecha]) { delete deleted[fecha]; changed = true; }
       if (changed) saveDeletedDays(deleted);
+      track.remoteLoaded = true;
     } catch (err) { /* página abierta como archivo o en otro alojamiento: solo hay datos de este navegador */ }
   }
   async function refreshPrices() {
@@ -1450,6 +1455,137 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     n.hidden = !(label || text);
     if (label) n.append(h("b", { text: label }));
     if (text) n.append(text);
+  }
+
+  // ---------- seguimiento: mínimo y máximo desde el escaneo ----------
+  // Se calculan con las velas de Binance desde la hora del escaneo: el primer tramo con velas de 1 minuto
+  // (para no contar precios de antes) y el resto con velas del tamaño justo para cubrirlo en una petición.
+  // El resultado se guarda en este navegador y en cada visita solo se piden las velas nuevas.
+  const RANGE_TTL = 5 * 60000;    // cada cuánto se vuelven a pedir velas de una moneda
+  const RANGE_RETRY = 30 * 60000; // si falló, cuándo se reintenta
+  const IV_MS = { "1m": 60000, "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000 };
+  let ranges = readJSON("seguimiento-rangos", {});
+  const rangeWanted = new Map(), rangeActive = new Set();
+  let rangeSaveTimer = null;
+  function saveRanges() {
+    clearTimeout(rangeSaveTimer);
+    store.set("seguimiento-rangos", JSON.stringify(ranges));
+  }
+  window.addEventListener("pagehide", saveRanges);
+  const rangeKey = (fecha, c) => fecha + "|" + c.mercado + "|" + c.simbolo;
+  function pickInterval(ms) {
+    for (const iv of ["1m", "5m", "15m", "1h", "4h"]) if (ms <= 990 * IV_MS[iv]) return iv;
+    return "1d";
+  }
+  async function klinesSince(c, interval, startTime, endTime) {
+    const cfg = API[c.mercado];
+    const api = liveApis[c.mercado] || (liveApis[c.mercado] = new BinanceApi(cfg, NEVER));
+    const span = (endTime || Date.now()) - startTime;
+    const limit = Math.max(2, Math.min(1000, Math.ceil(span / IV_MS[interval]) + 2));
+    const params = { symbol: c.simbolo, interval, startTime: String(startTime), limit: String(limit) };
+    if (endTime) params.endTime = String(endTime);
+    return api.get(cfg.klines, params, cfg.klinesW(limit));
+  }
+  function addExtremes(acc, rows) {
+    for (const k of rows) {
+      const high = +k[2], low = +k[3];
+      if (high > acc.high) acc.high = high;
+      if (low < acc.low) acc.low = low;
+      acc.until = Math.max(acc.until, Number(k[0]));  // la última vela (aún abierta) se vuelve a pedir la próxima vez
+    }
+  }
+  async function computeRange(fecha, c) {
+    const key = rangeKey(fecha, c), now = Date.now(), start = Date.parse(c.hora);
+    const cached = ranges[key];
+    let acc;
+    if (cached && !cached.error) {
+      acc = { low: cached.low, high: cached.high, until: cached.until };
+      const iv = pickInterval(now - acc.until);
+      addExtremes(acc, await klinesSince(c, iv, Math.floor(acc.until / IV_MS[iv]) * IV_MS[iv]));
+    } else {
+      acc = { low: c.precio, high: c.precio, until: start };
+      const iv = pickInterval(now - start);
+      const step = IV_MS[iv];
+      const coarseStart = iv === "1m" ? start : Math.ceil(start / step) * step;
+      const fineEnd = Math.min(coarseStart, now);
+      if (iv === "1m") {
+        addExtremes(acc, await klinesSince(c, "1m", Math.floor(start / 60000) * 60000));
+      } else {
+        if (fineEnd > start) {  // de la hora del escaneo hasta la primera vela grande completa
+          const fine = fineEnd - start <= 990 * 60000 ? "1m" : "5m";
+          addExtremes(acc, await klinesSince(c, fine, Math.floor(start / IV_MS[fine]) * IV_MS[fine], fineEnd - 1));
+        }
+        if (coarseStart < now) addExtremes(acc, await klinesSince(c, iv, coarseStart));
+      }
+    }
+    ranges[key] = { low: acc.low, high: acc.high, until: acc.until, checked: now };
+  }
+  function wantRanges(fecha, coins) {
+    const now = Date.now();
+    for (const c of coins) {
+      if (!API[c.mercado] || !isFinite(Date.parse(c.hora)) || !c.precio) continue;
+      const key = rangeKey(fecha, c), r = ranges[key];
+      if (r && now - r.checked < (r.error ? RANGE_RETRY : RANGE_TTL)) continue;
+      if (!rangeWanted.has(key) && !rangeActive.has(key)) rangeWanted.set(key, { fecha, coin: c });
+    }
+    pumpRanges();
+  }
+  function pumpRanges() {
+    while (rangeActive.size < 3 && rangeWanted.size) {
+      const [key, job] = rangeWanted.entries().next().value;
+      rangeWanted.delete(key);
+      rangeActive.add(key);
+      computeRange(job.fecha, job.coin)
+        .catch(() => {
+          // Se conservan los valores anteriores si los había; si no, se marca para reintentar más tarde.
+          ranges[key] = ranges[key] && !ranges[key].error ? Object.assign({}, ranges[key], { checked: Date.now() }) : { error: true, checked: Date.now() };
+        })
+        .finally(() => {
+          rangeActive.delete(key);
+          showRange(key);
+          if (!rangeActive.size && !rangeWanted.size) saveRanges();  // cola terminada: se guarda ya
+          else { clearTimeout(rangeSaveTimer); rangeSaveTimer = setTimeout(saveRanges, 1000); }
+          pumpRanges();
+        });
+    }
+  }
+  function pruneRanges(days) {
+    if (!track.remoteLoaded && location.protocol !== "file:") return;  // sin los días publicados aún no se sabe qué sobra
+    const valid = new Set(days.flatMap((d) => d.monedas.map((c) => rangeKey(d.fecha, c))));
+    let changed = false;
+    for (const key of Object.keys(ranges)) if (!valid.has(key)) { delete ranges[key]; changed = true; }
+    if (changed) saveRanges();
+  }
+  // Celda de mínimo o máximo: el precio y cuánto se alejó del precio del escaneo (incluye el precio actual).
+  function fillRange(td, fecha, c, kind) {
+    if (!td) return;
+    const r = ranges[rangeKey(fecha, c)];
+    td.textContent = "";
+    if (!r || r.error) {
+      td.append(r ? "—" : "…");
+      td.title = r ? "No se pudo calcular; se reintentará" : "Calculando…";
+      return;
+    }
+    let value = kind === "low" ? r.low : r.high;
+    if (c.ahora != null) value = kind === "low" ? Math.min(value, c.ahora) : Math.max(value, c.ahora);
+    td.removeAttribute("title");
+    td.append(fmtPrice(value));
+    if (c.precio) {
+      const pct = (value - c.precio) / c.precio * 100;
+      td.append(h("small", { class: "rng " + (pct > 0 ? "up" : pct < 0 ? "down" : ""), text: fmtPct(pct) }));
+    }
+  }
+  function rangeCell(fecha, c, kind) {
+    const td = h("td", { class: "r num c-" + kind, "data-label": kind === "low" ? "mín" : "máx" });
+    fillRange(td, fecha, c, kind);
+    return td;
+  }
+  function showRange(key) {
+    for (const tr of document.querySelectorAll("#track-days tr[data-key]")) {
+      if (tr.dataset.key !== key || !tr._coin) continue;
+      fillRange(tr.querySelector(".c-low"), tr._fecha, tr._coin, "low");
+      fillRange(tr.querySelector(".c-high"), tr._fecha, tr._coin, "high");
+    }
   }
 
   // ---------- seguimiento: pantalla ----------
@@ -1513,6 +1649,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     table.append(h("thead", null, h("tr", null,
       h("th", { text: "Moneda" }),
       h("th", { class: "r", text: "Precio " + shortDate(day.fecha) }),
+      h("th", { class: "r", text: "Mínimo", title: "Precio más bajo desde la hora del escaneo" }),
+      h("th", { class: "r", text: "Máximo", title: "Precio más alto desde la hora del escaneo" }),
       h("th", { class: "r", text: "Precio actual" }),
       h("th", { class: "r", text: "Variación" }),
       h("th", { class: "col-scan", text: "Escaneo" }))));
@@ -1522,9 +1660,14 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         h("td", { class: "c-coin" }, h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
           h("span", { class: "badge", text: MARKET_NAMES[c.mercado] || c.mercado })),
         h("td", { class: "r num c-then", "data-label": shortDate(day.fecha), text: fmtPrice(c.precio) }),
+        rangeCell(day.fecha, c, "low"),
+        rangeCell(day.fecha, c, "high"),
         h("td", { class: "r num c-now", "data-label": "ahora", text: c.ahora == null ? "—" : fmtPrice(c.ahora) }),
         h("td", { class: "r num c-pct " + (c.pct == null ? "" : c.pct >= 0 ? "up" : "down") }, c.pct == null ? "—" : fmtPct(c.pct), changeBar(c.pct)),
         h("td", { class: "col-scan muted", text: timeOf(c.hora) + (c.intervalo ? " · velas " + tfLabel(c.intervalo) : "") }));
+      tr.dataset.key = rangeKey(day.fecha, c);
+      tr._coin = c;
+      tr._fecha = day.fecha;
       const open = () => openTrackedChart(day, coins, i);
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
@@ -1536,6 +1679,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function dayCard(day, index) {
     const coins = withPrices(day).sort(TRACK_SORTS[track.sort] || TRACK_SORTS.subida);
     const open = isOpen(day.fecha, index);
+    if (open) wantRanges(day.fecha, coins);
     const s = summarize(coins);
     const toggle = h("button", { class: "day-toggle", type: "button", "aria-expanded": String(open) });
     toggle.innerHTML = ICON_CHEVRON;
@@ -1592,6 +1736,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const list = $("track-days");
     list.textContent = "";
     const days = allDays();
+    pruneRanges(days);
     if (!days.length) {
       const go = h("button", { class: "btn", type: "button", text: "Ir al escáner" });
       go.addEventListener("click", () => { location.hash = ""; });
