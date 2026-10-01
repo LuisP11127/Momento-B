@@ -448,12 +448,20 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     for (const key of Object.keys(d.mercados)) {
       options.push([key, MARKET_NAMES[key] || key, state.items.filter((it) => it.mercado === key).length]);
     }
+    if (Object.keys(d.mercados).length > 1) options.push(["unicas", "No repetidas", uniqueItems(state.items).length]);
     if (!options.some(([k]) => k === state.market)) state.market = "todos";
     for (const [key, label, n] of options) {
       const b = h("button", { type: "button", "aria-pressed": String(key === state.market) }, label, h("span", { class: "count", text: String(n) }));
       b.addEventListener("click", () => { state.market = key; renderHeader(); renderGrid(); });
       seg.append(b);
     }
+  }
+  // Moneda sin el multiplicador de algunos contratos de futuros (1000PEPE → PEPE, 1MBABYDOGE → BABYDOGE).
+  function coinOf(it) { return String(it.base || it.simbolo).replace(/^(1000000|100000|10000|1000|1M)(?=[A-Z])/, ""); }
+  // Cada moneda una sola vez: si está en spot y en futuros, se queda la de spot.
+  function uniqueItems(items) {
+    const spotCoins = new Set(items.filter((it) => it.mercado === "spot").map(coinOf));
+    return items.filter((it) => it.mercado === "spot" || !spotCoins.has(coinOf(it)));
   }
   function renderNotice(label, text, isError) {
     const n = $("notice");
@@ -542,8 +550,9 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const grid = $("grid");
     grid.textContent = "";
     const q = state.q.trim().toUpperCase();
-    state.view = state.items
-      .filter((it) => state.market === "todos" || it.mercado === state.market)
+    const pool = state.market === "unicas" ? uniqueItems(state.items)
+      : state.items.filter((it) => state.market === "todos" || it.mercado === state.market);
+    state.view = pool
       .filter((it) => !q || it.simbolo.toUpperCase().includes(q))
       .sort(SORTS[state.sort] || SORTS.distancia);
     state.view.forEach((it, i) => {
