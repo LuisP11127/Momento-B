@@ -305,6 +305,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       <span class="scan-status" id="track-status" aria-live="polite"></span>
     </div>
     <div class="sync" id="track-sync"></div>
+    <p class="gh-note" id="track-note"></p>
     <form class="gh" id="gh-form" autocomplete="off" hidden>
       <h3>Guardar el seguimiento en GitHub</h3>
       <ol>
@@ -468,8 +469,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (tf in it._sd) return it._sd[tf];
     const rows = rowsFor(it, tf);
     if (!rows) return (it._sd[tf] = null);
-    // Lightweight Charts dibuja en UTC: desplazamos a la hora local del navegador.
-    const time = (ms) => Math.floor(ms / 1000) - new Date(ms).getTimezoneOffset() * 60;
+    // Lightweight Charts dibuja en UTC. Las velas intradía se pasan a la hora local; las de 1D o más se dejan
+    // en UTC, porque Binance las abre a las 00:00 UTC y así cada vela lleva su fecha.
+    const local = (TF_MINUTES[tf] || 0) < 1440;
+    const time = (ms) => Math.floor(ms / 1000) - (local ? new Date(ms).getTimezoneOffset() * 60 : 0);
     const candles = rows.map((k) => ({ time: time(k[0]), open: k[1], high: k[2], low: k[3], close: k[4] }));
     const closes = rows.map((k) => k[4]);
     const periods = state.data.medias || [7, 25, 99];
@@ -1234,16 +1237,22 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const saveLocalDays = (days) => store.set("seguimiento", JSON.stringify(days));
   const deletedDays = () => readJSON("seguimiento-borrados", {});
   const saveDeletedDays = (days) => store.set("seguimiento-borrados", JSON.stringify(days));
+  // Los días del seguimiento siguen la vela diaria de Binance: cambian a las 00:00 UTC, no a medianoche local.
   function todayKey(d = new Date()) {
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0");
   }
-  function dayDate(fecha) { const [y, m, d] = fecha.split("-").map(Number); return new Date(y, m - 1, d); }
+  function dayDate(fecha) { const [y, m, d] = fecha.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); }
   function dayTitle(fecha) {
     const date = dayDate(fecha);
-    const text = date.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
-    return date.getFullYear() === new Date().getFullYear() ? text : text + " de " + date.getFullYear();
+    const text = date.toLocaleDateString("es-ES", { day: "numeric", month: "long", timeZone: "UTC" });
+    return date.getUTCFullYear() === new Date().getUTCFullYear() ? text : text + " de " + date.getUTCFullYear();
   }
-  function shortDate(fecha) { return dayDate(fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" }); }
+  function shortDate(fecha) { return dayDate(fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short", timeZone: "UTC" }); }
+  // Hora local a la que empieza el siguiente día del seguimiento (00:00 UTC), p. ej. «19:00» en UTC-5.
+  function dayChangeLocal() {
+    const now = new Date();
+    return timeOf(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toISOString());
+  }
   function daysAgo(fecha) {
     const n = Math.round((dayDate(todayKey()) - dayDate(fecha)) / 86400000);
     return n <= 0 ? "hoy" : n === 1 ? "ayer" : "hace " + n + " días";
@@ -1726,6 +1735,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function renderTracking() {
     renderTrackMarket();
     renderSync();
+    $("track-note").textContent = "Cada día sigue la vela diaria de Binance: cambia a las 00:00 UTC (las " + dayChangeLocal() + " en tu hora).";
     $("track-sort").value = track.sort;
     const list = $("track-days");
     list.textContent = "";
