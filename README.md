@@ -137,7 +137,9 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
     marca dónde también se cumple la condición);
   - `←` / `→` pasan a la moneda anterior o siguiente y `Esc` cierra;
   - enlace directo al par en Binance.
-- Filtros por mercado, búsqueda por símbolo y los mismos órdenes que en la terminal.
+- Filtros por mercado (**Todos**, **Spot**, **Futuros** y **No repetidas**, que muestra cada
+  moneda una sola vez y, si está en los dos mercados, se queda con la de spot), búsqueda
+  por símbolo y los mismos órdenes que en la terminal.
 - «Cargar informe» (o arrastrar un archivo a la página) abre otro informe `.html`
   o un `.json` generado con `--json`.
 
