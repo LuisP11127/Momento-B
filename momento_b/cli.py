@@ -14,9 +14,10 @@ from typing import Optional, Sequence
 
 from .binance import MARKETS, BinanceClient, BinanceError
 from .report import build_payload, signal_to_dict, write_report
-from .scanner import SORT_KEYS, ScanConfig, ScanResult, Signal, scan_market
+from .scanner import SORT_KEYS, ScanConfig, ScanResult, Signal, fetch_charts, scan_market
 
 INTERVALS = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]
+CHART_INTERVALS = ["2h", "4h", "8h", "12h", "1d"]
 REPORTS_DIR = Path("reportes")
 
 
@@ -55,6 +56,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--html", metavar="ARCHIVO",
                    help="ruta del informe con los gráficos (por defecto: reportes/momento-b_<intervalo>_<fecha>.html)")
     p.add_argument("--sin-grafico", action="store_true", help="no generar el informe con los gráficos")
+    p.add_argument("--graficos", nargs="+", choices=INTERVALS, default=CHART_INTERVALS, metavar="INTERVALO",
+                   help="temporalidades disponibles en los gráficos (por defecto: 2h 4h 8h 12h 1d)")
     p.add_argument("--no-abrir", action="store_true", help="generar el informe pero no abrirlo en el navegador")
     p.add_argument("--workers", type=int, default=8, help="descargas en paralelo (por defecto: 8)")
     p.add_argument("--spot-url", help="URL base de la API spot (por defecto: https://api.binance.com)")
@@ -171,13 +174,13 @@ def export_json(path: str, payload: dict) -> None:
         json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
 
 
-def _progress_printer(label: str):
+def _progress_printer(label: str, unit: str = "pares descargados"):
     if not sys.stderr.isatty():
         return None
 
     def report(done: int, total: int) -> None:
         end = "\n" if done == total else ""
-        print(f"\r  {label}: {done}/{total} pares descargados", end=end, file=sys.stderr, flush=True)
+        print(f"\r  {label}: {done}/{total} {unit}", end=end, file=sys.stderr, flush=True)
 
     return report
 
@@ -226,6 +229,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             continue
         results.append(result)
         print(render_result(result, args.orden, args.top) + "\n")
+        if result.signals and (not args.sin_grafico or args.json):
+            fetch_charts(client, result, args.graficos, progress=_progress_printer(market.label, "gráficos descargados"))
         for warning in result.warnings:
             print(f"  Aviso: {warning}", file=sys.stderr)
         for symbol, error in result.errors[:5]:

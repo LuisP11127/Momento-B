@@ -5,16 +5,16 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Sequence
+from typing import Optional, Sequence
 
-from .scanner import SORT_KEYS, ScanResult, Signal
+from .scanner import INTERVAL_MINUTES, SORT_KEYS, ScanResult, Signal
 
 TEMPLATE_PATH = Path(__file__).with_name("report_template.html")
 BODY_MARKER = "<!--BODY-->"
 DATA_MARKER = "__MOMENTO_DATA__"
 
 
-def signal_to_dict(signal: Signal, interval: str, candles: bool = False) -> dict:
+def signal_to_dict(signal: Signal, interval: str, candles: bool = False, charts: Optional[dict] = None) -> dict:
     data = {
         "mercado": signal.market,
         "intervalo": interval,
@@ -34,6 +34,9 @@ def signal_to_dict(signal: Signal, interval: str, candles: bool = False) -> dict
     if candles:
         # [apertura ms, open, high, low, close, volumen]
         data["velas"] = [list(c) for c in signal.candles]
+    if charts:
+        # Las mismas velas en otras temporalidades: {"2h": [[...], ...], "1d": [...]}
+        data["graficos"] = {tf: [list(c) for c in rows] for tf, rows in charts.items()}
     return data
 
 
@@ -46,9 +49,11 @@ def build_payload(
     """Resultados del escaneo con las velas de cada moneda: lo que leen el informe y el .json."""
     config = results[0].config
     fast, mid, slow = config.periods
+    intervals = {config.interval} | {tf for r in results for charts in r.charts.values() for tf in charts}
     return {
         "generado": generated_at.isoformat(timespec="seconds"),
         "intervalo": config.interval,
+        "intervalos_grafico": sorted(intervals, key=lambda tf: INTERVAL_MINUTES.get(tf, 0)),
         "medias": list(config.periods),
         "condicion": f"MA{fast} > MA{mid} y MA{fast} < MA{slow}",
         "solo_cerradas": config.closed_only,
@@ -60,7 +65,8 @@ def build_payload(
                 "quote": config.quote or "ALL",
                 "analizadas": r.analyzed,
                 "coincidencias": [
-                    signal_to_dict(s, config.interval, candles=True) for s in sorted(r.signals, key=SORT_KEYS[order])
+                    signal_to_dict(s, config.interval, candles=True, charts=r.charts.get(s.symbol))
+                    for s in sorted(r.signals, key=SORT_KEYS[order])
                 ],
             }
             for r in results

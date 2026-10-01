@@ -77,6 +77,7 @@ SPOT (USDT) — 57 coincidencias de 402 analizadas
 | `--top N` | — | Muestra solo las N primeras de cada mercado. |
 | `--csv / --json ARCHIVO` | — | Exporta los resultados (el JSON incluye las velas de cada moneda). |
 | `--html ARCHIVO` | `reportes/…` | Ruta del informe con los gráficos. |
+| `--graficos INTERVALO…` | `2h 4h 8h 12h 1d` | Temporalidades que se pueden ver en los gráficos. |
 | `--sin-grafico` | no | No genera el informe con los gráficos. |
 | `--no-abrir` | no | Genera el informe pero no lo abre en el navegador. |
 | `--workers N` | `8` | Descargas en paralelo. |
@@ -89,11 +90,15 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
 
 - Una tarjeta por moneda con su gráfico de velas y las tres medias, con los
   colores de Binance: MA(7) amarillo, MA(25) rosa y MA(99) morado.
+- **Gráfico: 2h / 4h / 8h / 12h / 1D** cambia la temporalidad de todos los gráficos.
+  La fila «Cumple en» de cada tarjeta marca en qué temporalidades se cumple
+  también MA(7) > MA(25) y MA(7) < MA(99).
 - **Tamaño S / M / L** cambia el tamaño de todas las tarjetas.
 - Al pulsar una tarjeta, o el botón de ampliar, el gráfico se abre a pantalla completa:
   - rueda del ratón o pellizco para acercar y alejar, y arrastrar para moverse en el tiempo;
   - botones `−` / `+` y «ver todo el historial» (teclas `-`, `+` y `0`);
   - al pasar el ratón se ven apertura, máximo, mínimo, cierre y el valor de cada media en esa vela;
+  - selector de temporalidad propio (un punto marca dónde también se cumple la condición);
   - `←` / `→` pasan a la moneda anterior o siguiente y `Esc` cierra;
   - enlace directo al par en Binance.
 - Filtros por mercado, búsqueda por símbolo y los mismos órdenes que en la terminal.
@@ -133,18 +138,37 @@ probar `--spot-url https://data-api.binance.vision`.
 
 ## Ejecutarlo en GitHub
 
-El workflow `.github/workflows/scanner.yml` pasa los tests y hace un escaneo real
-en los servidores de GitHub:
+El workflow `.github/workflows/scanner.yml` pasa los tests y hace un escaneo real:
 
 - se ejecuta solo en cada pull request y en cada cambio en `main`;
-- en la pestaña **Actions → Scanner → Run workflow** se lanza a mano eligiendo
-  temporalidad y volumen mínimo (el botón aparece cuando el workflow está en `main`).
+- en **Actions → Scanner → Run workflow** se lanza a mano eligiendo servidor,
+  mercado, temporalidad y volumen mínimo (el botón aparece cuando el workflow está en `main`).
 
 El resultado se ve en el resumen de la ejecución, y el informe con los gráficos
-se descarga en **Artifacts → momento-b**. Los servidores de GitHub están en
-EE. UU. y Binance puede rechazarlos (error `451`); para spot se usa
-`data-api.binance.vision`, que suele funcionar. Si un mercado falla, el
-workflow no se marca como fallido y el aviso aparece en el resumen.
+se descarga en **Artifacts → momento-b**.
+
+### Futuros y los servidores de EE. UU.
+
+Los servidores de GitHub están en EE. UU. y Binance rechaza desde allí la API de
+futuros (error `451`). En spot se usa `data-api.binance.vision`, que sí responde.
+Para escanear futuros hay tres opciones:
+
+1. **Ejecutarlo en tu ordenador** con `python -m momento_b`. Es lo más sencillo.
+2. **Usar tu ordenador como ejecutor de GitHub** y seguir lanzándolo desde el botón:
+   1. En el repositorio: **Settings → Actions → Runners → New self-hosted runner**.
+   2. Elige tu sistema (Windows, macOS o Linux) y ejecuta los comandos que muestra
+      GitHub (descargar, `config` con el token y `run`). Mientras esté en marcha,
+      el ejecutor aparece como *Idle*.
+   3. **Actions → Scanner → Run workflow** con **Servidor: mi-ordenador**.
+
+   El escaneo sale desde tu conexión, así que funcionan spot y futuros, y el
+   resumen y el informe quedan en GitHub igual que antes. GitHub recomienda los
+   ejecutores propios solo en repositorios privados: mantén este repositorio privado.
+3. **Un servidor propio (VPS) en un país donde Binance opere**, registrado como
+   ejecutor igual que en la opción 2, si quieres lanzarlo sin tener tu ordenador encendido.
+
+Usar un proxy o una VPN para saltarse el bloqueo va contra las condiciones de
+uso de Binance, así que no es una opción recomendada.
 
 ## Tests
 

@@ -6,7 +6,7 @@ import pytest
 from momento_b import cli, report
 from momento_b.binance import FUTURES, SPOT, BinanceError, BinanceFatalError, WeightLimiter
 from momento_b.indicators import bars_above, sma
-from momento_b.scanner import ScanConfig, evaluate, scan_market, select_symbols
+from momento_b.scanner import ScanConfig, evaluate, fetch_charts, scan_market, select_symbols
 
 
 def kline(close, close_time):
@@ -190,6 +190,28 @@ def test_scan_market_warns_when_tags_are_unavailable():
     assert [s.symbol for s in result.signals] == ["AAAUSDT"]
 
 
+def test_fetch_charts_downloads_other_timeframes_for_signals():
+    client = spot_client()
+    result = scan_market(client, ScanConfig(interval="4h", workers=2))
+    client.requested.clear()
+    fetch_charts(client, result, ["2h", "4h", "8h", "2h", "1d"])
+    assert sorted(r[1] for r in client.requested) == ["1d", "2h", "8h"]  # sin repetir la del escaneo
+    assert {r[0] for r in client.requested} == {"AAAUSDT"}
+    assert sorted(result.charts["AAAUSDT"]) == ["1d", "2h", "8h"]
+    assert len(result.charts["AAAUSDT"]["1d"]) == len(REBOUND)
+
+
+def test_fetch_charts_survives_errors():
+    client = spot_client()
+    result = scan_market(client, ScanConfig(workers=1))
+    client._errors = {"AAAUSDT": BinanceError("400")}
+    fetch_charts(client, result, ["2h", "1d"])
+    assert result.charts == {} and result.warnings == []
+    client._errors = {"AAAUSDT": BinanceFatalError("451")}
+    fetch_charts(client, result, ["2h", "1d"])
+    assert result.charts == {} and "451" in result.warnings[0]
+
+
 def test_scan_market_min_volume_skips_requests():
     client = spot_client()
     result = scan_market(client, ScanConfig(min_quote_volume=1_000_000, workers=2))
@@ -289,6 +311,8 @@ def test_cli_end_to_end(monkeypatch, tmp_path, capsys, opened):
     futures = data["mercados"]["futures"]["coincidencias"]
     assert [s["simbolo"] for s in futures] == ["AAAUSDT"]
     assert len(futures[0]["velas"]) == len(REBOUND)
+    assert data["intervalos_grafico"] == ["2h", "4h", "8h", "12h", "1d"]
+    assert sorted(futures[0]["graficos"]) == ["12h", "2h", "4h", "8h"]  # la de 1d va en "velas"
     assert out_csv.read_text().count("AAAUSDT") == 2
     html = out_html.read_text()
     assert html.startswith("<!doctype html>")
@@ -315,6 +339,16 @@ def test_cli_without_chart(monkeypatch, tmp_path, opened):
     assert cli.main(["--sin-grafico"]) == 0
     assert not (tmp_path / "reportes").exists()
     assert opened == []
+    assert {r[1] for c in clients.values() for r in c.requested} == {"4h"}  # sin gráficos no hay descargas extra
+
+
+def test_cli_custom_chart_timeframes(monkeypatch, tmp_path, opened):
+    clients = both_clients()
+    monkeypatch.setattr(cli, "BinanceClient", lambda market, **kw: clients[market.key])
+    out_json = tmp_path / "r.json"
+    assert cli.main(["-i", "1h", "--graficos", "1h", "1d", "--json", str(out_json), "--sin-grafico"]) == 0
+    data = json.loads(out_json.read_text())
+    assert data["intervalos_grafico"] == ["1h", "1d"]
 
 
 def test_cli_reports_blocked_market(monkeypatch, capsys, opened):

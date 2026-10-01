@@ -79,7 +79,7 @@ input[type="search"] { width: 13rem; max-width: 100%; }
 .notice.error { border-style: solid; border-color: var(--down); }
 
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
-.toolbar label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.toolbar label, .toolbar .field { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .seg { display: inline-flex; padding: 2px; gap: 2px; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; }
 .seg button { border: 0; background: transparent; color: var(--muted); padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: 500; }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--panel); }
@@ -105,6 +105,15 @@ input[type="search"] { width: 13rem; max-width: 100%; }
 .ma-legend span b { font-weight: 500; }
 .mini { height: var(--mini-h); border-radius: 4px; overflow: hidden; background: var(--panel); position: relative; }
 .mini .placeholder, .big .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; text-align: center; padding: 8px; }
+.tf-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 12px; color: var(--muted); }
+.tf-row > span:first-child { margin-right: 4px; }
+.tf-chip { font: 500 11px/1 var(--font-mono); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
+.tf-chip.on { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.tf-chip.na { border-style: dashed; opacity: 0.6; }
+.tf-tag { font: 500 11px/1 var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 3px 5px; }
+.seg.tf button { font-family: var(--font-mono); font-size: 13px; }
+.seg .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 5px; vertical-align: middle; }
+.seg button[aria-pressed="true"] .dot { background: var(--panel); }
 .card-foot { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; color: var(--muted); }
 .card-foot b { font: 500 13px var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
 
@@ -168,14 +177,17 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       </select>
     </label>
     <input id="search" type="search" placeholder="Buscar moneda" aria-label="Buscar moneda" autocomplete="off">
+    <span class="field">Gráfico
+      <span class="seg tf" id="tf" role="group" aria-label="Temporalidad de los gráficos"></span>
+    </span>
     <span class="spacer"></span>
-    <label>Tamaño
+    <span class="field">Tamaño
       <span class="seg" id="size" role="group" aria-label="Tamaño de los gráficos">
         <button type="button" data-size="s" aria-pressed="false">S</button>
         <button type="button" data-size="m" aria-pressed="true">M</button>
         <button type="button" data-size="l" aria-pressed="false">L</button>
       </span>
-    </label>
+    </span>
   </div>
 
   <main class="grid size-m" id="grid" aria-live="polite"></main>
@@ -197,6 +209,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       <span class="chg" id="v-chg"></span>
     </div>
     <div class="viewer-stats" id="v-stats"></div>
+    <div class="seg tf" id="v-tf" role="group" aria-label="Temporalidad del gráfico"></div>
     <div class="controls">
       <button class="icon-btn" id="v-prev" type="button" title="Moneda anterior (←)" aria-label="Moneda anterior">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -218,7 +231,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   </div>
   <div class="ma-legend" id="v-legend"></div>
   <div class="big" id="big"></div>
-  <p class="hint">Rueda del ratón o pellizco para acercar y alejar · arrastra para moverte en el tiempo · ← → cambia de moneda · Esc cierra</p>
+  <p class="hint">Rueda del ratón o pellizco para acercar y alejar · arrastra para moverte en el tiempo · ← → cambia de moneda · Esc cierra · el punto marca las temporalidades donde también se cumple la condición</p>
 </div>
 
 <script id="momento-data" type="application/json">__MOMENTO_DATA__</script>
@@ -229,7 +242,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const $ = (id) => document.getElementById(id);
   const MARKET_NAMES = { spot: "Spot", futures: "Futuros" };
   const SIZES = { s: 90, m: 120, l: 160 };  // velas visibles en cada mini-gráfico
-  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1 };
+  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null };
   const minis = new Map();  // elemento .mini -> entrada de gráfico
   let big = null;
   let lastFocus = null;
@@ -301,9 +314,13 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (!obj || typeof obj !== "object" || !obj.mercados) throw new Error("no contiene resultados del scanner");
     return obj;
   }
-  function seriesData(it) {
-    if (it._sd) return it._sd;
-    const rows = Array.isArray(it.velas) ? it.velas : [];
+  function intervals() { return state.data.intervalos_grafico || [state.data.intervalo]; }
+  function tfLabel(tf) { return tf.replace(/d$/, "D").replace(/w$/, "W"); }
+  function seriesData(it, tf) {
+    it._sd = it._sd || {};
+    if (tf in it._sd) return it._sd[tf];
+    const rows = tf === state.data.intervalo ? it.velas : (it.graficos || {})[tf];
+    if (!Array.isArray(rows) || rows.length === 0) return (it._sd[tf] = null);
     // Lightweight Charts dibuja en UTC: desplazamos a la hora local del navegador.
     const time = (ms) => Math.floor(ms / 1000) - new Date(ms).getTimezoneOffset() * 60;
     const candles = rows.map((k) => ({ time: time(k[0]), open: k[1], high: k[2], low: k[3], close: k[4] }));
@@ -312,8 +329,30 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const raw = periods.map((p) => sma(closes, p));
     const mas = raw.map((arr) => arr.flatMap((v, i) => (v == null ? [] : [{ time: candles[i].time, value: v }])));
     const volume = rows.map((k, i) => ({ time: candles[i].time, value: k[5], up: k[4] >= k[1] }));
-    it._sd = { candles, raw, mas, volume };
-    return it._sd;
+    return (it._sd[tf] = { candles, raw, mas, volume });
+  }
+  // ¿Se cumple MA rápida > media y rápida < lenta en la última vela de esa temporalidad? (null = sin datos)
+  function meets(it, tf) {
+    const sd = seriesData(it, tf);
+    if (!sd) return null;
+    const i = sd.candles.length - 1 - (state.data.solo_cerradas ? 1 : 0);
+    const [f, m, s] = sd.raw.map((arr) => arr[i]);
+    if (f == null || m == null || s == null) return null;
+    return f > m && f < s;
+  }
+  function tfButtons(container, selected, onPick, it) {
+    container.textContent = "";
+    for (const tf of intervals()) {
+      const b = h("button", { type: "button", "aria-pressed": String(tf === selected) }, tfLabel(tf));
+      if (it && meets(it, tf)) {
+        b.append(h("span", { class: "dot", title: "La condición también se cumple en " + tfLabel(tf) }));
+      }
+      b.addEventListener("click", () => onPick(tf));
+      container.append(b);
+    }
+  }
+  function renderTf() {
+    tfButtons($("tf"), state.tf, (tf) => { state.tf = tf; store.set("tf", tf); renderTf(); renderGrid(); });
   }
   function setData(data) {
     state.data = data;
@@ -323,7 +362,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     }
     if (data.orden && !store.get("sort")) state.sort = data.orden;
     $("sort").value = state.sort;
+    const savedTf = store.get("tf");
+    state.tf = intervals().includes(savedTf) ? savedTf : data.intervalo;
     $("toolbar").hidden = false;
+    renderTf();
     renderHeader();
     renderNotice();
     renderGrid();
@@ -380,15 +422,31 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     variacion: (a, b) => (b.var_24h_pct ?? -Infinity) - (a.var_24h_pct ?? -Infinity),
     simbolo: (a, b) => a.simbolo.localeCompare(b.simbolo),
   };
-  function maLegend(it, idx) {
+  function maLegend(it, idx, tf) {
     const [f, m, s] = state.data.medias || [7, 25, 99];
     let vals = [it.ma_rapida, it.ma_media, it.ma_lenta];
-    if (idx != null) vals = seriesData(it).raw.map((arr) => arr[idx]);
+    const sd = seriesData(it, tf);
+    if (sd) {
+      const i = idx == null ? sd.candles.length - 1 : idx;
+      vals = sd.raw.map((arr) => arr[i]);
+    }
     const wrap = h("div", { class: "ma-legend" });
     [[f, "c-fast"], [m, "c-mid"], [s, "c-slow"]].forEach(([p, cls], i) => {
       wrap.append(h("span", null, h("b", { class: cls, text: "MA(" + p + ") " }), fmtPrice(vals[i])));
     });
     return wrap;
+  }
+  function tfChips(it) {
+    const row = h("div", { class: "tf-row" }, h("span", { text: "Cumple en" }));
+    for (const tf of intervals()) {
+      const ok = meets(it, tf);
+      row.append(h("span", {
+        class: "tf-chip" + (ok ? " on" : ok == null ? " na" : ""),
+        text: tfLabel(tf),
+        title: ok ? "Se cumple en " + tfLabel(tf) : ok == null ? "Sin datos de " + tfLabel(tf) : "No se cumple en " + tfLabel(tf),
+      }));
+    }
+    return row;
   }
   const ICON_EXPAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
   function card(it, index) {
@@ -406,9 +464,11 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       h("div", { class: "figures" },
         h("span", { class: "price", text: fmtPrice(it.precio) }),
         h("span", { class: "chg " + (chg >= 0 ? "up" : "down"), text: fmtPct(chg) + " 24h" })),
-      maLegend(it),
+      maLegend(it, null, state.tf),
       mini,
+      tfChips(it),
       h("div", { class: "card-foot" },
+        h("span", { class: "tf-tag", text: tfLabel(state.data.intervalo), title: "Datos del escaneo en " + tfLabel(state.data.intervalo) }),
         h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
         h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
         h("span", null, "Vol ", h("b", { text: fmtVol(it.volumen_24h) }))));
@@ -465,13 +525,13 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     entry.mas.forEach((s, i) => s.applyOptions({ color: t.ma[i] }));
     if (entry.volume) {
       const alpha = (c) => c + (c.startsWith("#") && c.length === 7 ? "66" : "");
-      entry.volume.setData(seriesData(entry.item).volume.map((v) => ({ time: v.time, value: v.value, color: alpha(v.up ? t.up : t.down) })));
+      entry.volume.setData(seriesData(entry.item, entry.tf).volume.map((v) => ({ time: v.time, value: v.value, color: alpha(v.up ? t.up : t.down) })));
     }
   }
-  function buildChart(el, it, isBig) {
-    const sd = seriesData(it);
-    if (!window.LightweightCharts || sd.candles.length === 0) {
-      el.append(h("div", { class: "placeholder", text: window.LightweightCharts ? "Sin velas en este archivo" : "No se pudo cargar la librería de gráficos" }));
+  function buildChart(el, it, isBig, tf) {
+    const sd = seriesData(it, tf);
+    if (!window.LightweightCharts || !sd) {
+      el.append(h("div", { class: "placeholder", text: window.LightweightCharts ? "Sin velas de " + tfLabel(tf) + " para esta moneda" : "No se pudo cargar la librería de gráficos" }));
       return null;
     }
     const t = tokens();
@@ -490,7 +550,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol", lastValueVisible: false, priceLineVisible: false });
       chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
-    const entry = { chart, candles, mas, volume, item: it, isBig };
+    const entry = { chart, candles, mas, volume, item: it, isBig, tf };
     applyColors(entry, t);
     const n = sd.candles.length;
     const visible = isBig ? 150 : SIZES[state.size];
@@ -500,7 +560,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function createMini(el) {
     const it = state.view[Number(el.dataset.index)];
     if (!it || minis.has(el)) return;
-    const entry = buildChart(el, it, false);
+    const entry = buildChart(el, it, false, state.tf);
     if (entry) minis.set(el, entry);
   }
   function refreshTheme() {
@@ -515,9 +575,9 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function updateLegend(idx) {
     const it = state.view[state.current];
     const legend = $("v-legend");
-    legend.replaceWith(Object.assign(maLegend(it, idx), { id: "v-legend" }));
-    const sd = seriesData(it);
-    const c = sd.candles[idx];
+    legend.replaceWith(Object.assign(maLegend(it, idx, state.vtf), { id: "v-legend" }));
+    const sd = seriesData(it, state.vtf);
+    const c = sd && sd.candles[idx];
     if (c) {
       const ohlc = h("span", null);
       for (const [k, v] of [["A", c.open], ["M", c.high], ["m", c.low], ["C", c.close]]) {
@@ -530,7 +590,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (!state.view.length) return;
     index = (index + state.view.length) % state.view.length;
     const viewer = $("viewer");
-    if (viewer.hidden) lastFocus = document.activeElement;
+    if (viewer.hidden) { lastFocus = document.activeElement; state.vtf = state.tf; }
     closeBig();
     state.current = index;
     const it = state.view[index];
@@ -545,6 +605,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const stats = $("v-stats");
     stats.textContent = "";
     stats.append(
+      h("span", { class: "tf-tag", text: tfLabel(state.data.intervalo), title: "Datos del escaneo en " + tfLabel(state.data.intervalo) }),
       h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
       h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
       h("span", null, "Vol 24h ", h("b", { text: fmtVol(it.volumen_24h) })),
@@ -556,8 +617,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     document.body.classList.add("viewing");
     const el = $("big");
     el.textContent = "";
-    big = buildChart(el, it, true);
-    const last = seriesData(it).candles.length - 1;
+    tfButtons($("v-tf"), state.vtf, (tf) => { state.vtf = tf; openViewer(state.current); }, it);
+    big = buildChart(el, it, true, state.vtf);
+    const sdBig = seriesData(it, state.vtf);
+    const last = sdBig ? sdBig.candles.length - 1 : -1;
     updateLegend(last);
     if (big) {
       big.chart.subscribeCrosshairMove((p) => {
@@ -582,7 +645,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const ts = big.chart.timeScale();
     const r = ts.getVisibleLogicalRange();
     if (!r) return;
-    const n = seriesData(big.item).candles.length;
+    const n = seriesData(big.item, big.tf).candles.length;
     const width = Math.min(n + 40, Math.max(12, (r.to - r.from) * factor));
     ts.setVisibleLogicalRange({ from: r.to - width, to: r.to });
   }
@@ -608,7 +671,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     for (const b of $("size").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.size === state.size));
     store.set("size", state.size);
     for (const [el, entry] of minis) {
-      const n = seriesData(entry.item).candles.length;
+      const n = seriesData(entry.item, entry.tf).candles.length;
       entry.chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - SIZES[state.size]), to: n + 1 });
     }
   }

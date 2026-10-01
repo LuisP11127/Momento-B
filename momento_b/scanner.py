@@ -16,6 +16,12 @@ from .indicators import bars_above, sma
 
 DEFAULT_PERIODS = (7, 25, 99)
 
+# Duración de cada temporalidad de Binance en minutos (para ordenarlas).
+INTERVAL_MINUTES = {
+    "1m": 1, "3m": 3, "5m": 5, "15m": 15, "30m": 30, "1h": 60, "2h": 120, "4h": 240, "6h": 360,
+    "8h": 480, "12h": 720, "1d": 1440, "3d": 4320, "1w": 10080, "1M": 43200,
+}
+
 # Bases que no son criptomonedas "de verdad" para este análisis (se mueven en torno a 1).
 STABLECOINS = frozenset(
     {
@@ -93,6 +99,8 @@ class ScanResult:
     insufficient_data: int = 0
     errors: list[tuple[str, str]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # símbolo -> temporalidad -> velas, para ver el gráfico de cada señal en otras temporalidades
+    charts: dict[str, dict[str, tuple]] = field(default_factory=dict)
 
 
 # Órdenes disponibles para mostrar o exportar las señales.
@@ -151,6 +159,11 @@ def select_symbols(
 def is_tokenized_stock(tags: Sequence[str]) -> bool:
     """Binance etiqueta sus acciones tokenizadas (AAPLB, NVDAB...) como "bStocks"."""
     return any(isinstance(tag, str) and "stock" in tag.lower() for tag in tags)
+
+
+def parse_candles(klines: Sequence[Sequence]) -> tuple[tuple[int, float, float, float, float, float], ...]:
+    """(apertura ms, open, high, low, close, volumen) de cada vela de Binance."""
+    return tuple((int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])) for k in klines)
 
 
 def _to_float(value) -> Optional[float]:
@@ -244,11 +257,42 @@ def scan_market(
                     cross_seen=snap.cross_seen,
                     change_24h_pct=change,
                     quote_volume_24h=volume,
-                    candles=tuple(
-                        (int(k[0]), float(k[1]), float(k[2]), float(k[3]), float(k[4]), float(k[5])) for k in klines
-                    ),
+                    candles=parse_candles(klines),
                 )
             )
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
     return result
+
+
+def fetch_charts(
+    client,
+    result: ScanResult,
+    intervals: Sequence[str],
+    progress: Optional[Callable[[int, int], None]] = None,
+) -> None:
+    """Descarga las velas de otras temporalidades para el gráfico de cada moneda encontrada."""
+    config = result.config
+    extra = [i for i in dict.fromkeys(intervals) if i != config.interval]
+    wanted = [(signal.symbol, interval) for signal in result.signals for interval in extra]
+    if not wanted:
+        return
+    limit = max(config.periods) + config.extra_history
+    pool = ThreadPoolExecutor(max_workers=max(1, config.workers))
+    try:
+        jobs = {pool.submit(client.klines, symbol, interval, limit): (symbol, interval) for symbol, interval in wanted}
+        for done, job in enumerate(as_completed(jobs), 1):
+            if progress:
+                progress(done, len(jobs))
+            symbol, interval = jobs[job]
+            try:
+                klines = job.result()
+            except BinanceFatalError as exc:
+                result.warnings.append(f"no se pudieron descargar los gráficos en otras temporalidades: {exc}")
+                break
+            except BinanceError:
+                continue  # el gráfico de esa temporalidad simplemente no estará disponible
+            if klines:
+                result.charts.setdefault(symbol, {})[interval] = parse_candles(klines)
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
