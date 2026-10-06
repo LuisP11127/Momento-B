@@ -550,6 +550,7 @@ def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
     (tmp_path / "roto.json").write_text("{no es json", encoding="utf-8")
     (tmp_path / "otro.json").write_text(json.dumps({"monedas": []}), encoding="utf-8")  # sin fecha
     (tmp_path / "README.md").write_text("no es un día", encoding="utf-8")
+    (tmp_path / "estrellas.json").write_text(json.dumps({"estrellas": {}}), encoding="utf-8")  # no es un día
 
     days = web.collect_tracking(tmp_path)
 
@@ -558,7 +559,27 @@ def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
     assert len(days[0]["monedas"]) == 1
     out = capsys.readouterr().out
     assert "roto.json" in out and "otro.json" in out
+    assert "estrellas.json" not in out
     assert web.collect_tracking(tmp_path / "no-existe") == []
+
+
+def test_collect_stars_keeps_valid_entries(tmp_path, capsys):
+    from momento_b import web
+
+    assert web.collect_stars(tmp_path) == {}  # sin archivo
+    (tmp_path / "estrellas.json").write_text(json.dumps({"estrellas": {
+        "spot:BTCUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"},
+        "futures:ETHUSDT": {"activa": False, "hora": "2026-10-06T16:00:00.000Z", "otro": 1},
+        "sin-mercado": {"activa": True, "hora": "x"},
+        "spot:XUSDT": {"activa": "sí"},
+    }}), encoding="utf-8")
+    assert web.collect_stars(tmp_path) == {
+        "futures:ETHUSDT": {"activa": False, "hora": "2026-10-06T16:00:00.000Z"},
+        "spot:BTCUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"},
+    }
+    (tmp_path / "estrellas.json").write_text("[]", encoding="utf-8")
+    assert web.collect_stars(tmp_path) == {}
+    assert "estrellas.json" in capsys.readouterr().out
 
 
 def test_web_cli_writes_tracking_aggregate(tmp_path):
@@ -569,11 +590,15 @@ def test_web_cli_writes_tracking_aggregate(tmp_path):
     (folder / "2026-10-02.json").write_text(json.dumps({"fecha": "2026-10-02", "monedas": [
         {"mercado": "futures", "simbolo": "BBBUSDT", "base": "BBB", "quote": "USDT", "precio": 2, "hora": "x", "intervalo": "1d"}]}),
         encoding="utf-8")
+    (folder / "estrellas.json").write_text(json.dumps({"estrellas": {
+        "futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}}), encoding="utf-8")
     out = tmp_path / "site"
     assert web.main([str(out), "--seguimiento", str(folder)]) == 0
     data = json.loads((out / "seguimiento.json").read_text(encoding="utf-8"))
     assert [d["fecha"] for d in data["dias"]] == ["2026-10-02"]
+    assert data["estrellas"] == {"futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}
     assert (out / "index.html").exists()
+    assert (out / "icono.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     # Sin --seguimiento no se escribe (docs/ no debe llevar una copia que se quede vieja)
     assert web.main([str(tmp_path / "otra")]) == 0
     assert not (tmp_path / "otra" / "seguimiento.json").exists()
