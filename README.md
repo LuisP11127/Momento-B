@@ -62,15 +62,23 @@ Binance.
 
 En la pestaña **Seguimiento** de la web:
 
-- un apartado por día (el más reciente abierto) con el precio de entonces, el
-  **mínimo y el máximo desde la hora del escaneo** (con cuánto se alejaron de ese
-  precio), el precio actual y la variación, y un resumen: media, cuántas suben y
-  bajan, la mejor y la peor. Los precios se piden a Binance desde tu navegador
-  (spot y futuros) y se actualizan cada minuto. El mínimo y el máximo salen de las
-  velas de Binance desde ese momento (el primer tramo con velas de 1 minuto); se
-  guardan en el navegador y en cada visita solo se descargan las velas nuevas;
+- un apartado por día (el más reciente abierto) con las columnas **Moneda**,
+  **Precio** del día del seguimiento (el del momento del escaneo), **Precio actual**,
+  **Mínimo** y **Máximo** desde la hora del escaneo (con cuánto se alejaron del
+  precio del seguimiento), **Variación** (del precio del seguimiento al actual) y la
+  hora del **Escaneo**, y un resumen: media, cuántas suben y bajan, la mejor y la
+  peor. Mínimo, máximo y variación cuentan solo lo que pasó después del escaneo. Los
+  precios se piden a Binance desde tu navegador (spot y futuros) y se actualizan
+  cada minuto. El mínimo y el máximo salen de las velas de Binance desde ese
+  momento (el primer tramo con velas de 1 minuto, empezando en el minuto del
+  escaneo); se guardan en el navegador y en cada visita solo se descargan las velas
+  nuevas;
+- **estrellas**: la estrella de cada moneda (en las tarjetas del escáner, en el
+  gráfico ampliado o en la tabla del seguimiento) la deja fijada, y en el
+  seguimiento aparece primero en cada día donde esté. Cuenta el mercado: la de spot
+  y la de futuros se marcan por separado;
 - filtros **Todos / Spot / Futuros / No repetidas** y orden por subida, bajada,
-  moneda u orden del escaneo;
+  moneda u orden del escaneo (las monedas con estrella van siempre primero);
 - al pulsar una moneda se abre su gráfico (1D por defecto) con una línea en el
   precio del seguimiento y una flecha en la vela de ese día;
 - **Borrar** quita un día.
@@ -84,9 +92,18 @@ también en GitHub** y pega una clave de GitHub (*fine-grained token*) creada en
 - **Permissions → Repository permissions → Contents → Read and write**.
 
 La clave se guarda solo en ese navegador y solo se envía a GitHub. Cada día queda
-como un archivo `docs/seguimiento/AAAA-MM-DD.json`, y el workflow `Web` los une en
-`seguimiento.json` al publicar la página (en otros dispositivos aparece en un
-minuto). Lo que escaneas sin conexión con GitHub se sube al conectarlo.
+como un archivo `docs/seguimiento/AAAA-MM-DD.json` y las estrellas en
+`docs/seguimiento/estrellas.json`; el workflow `Web` los une en `seguimiento.json`
+al publicar la página (en otros dispositivos aparece en un minuto). Lo que
+escaneas sin conexión con GitHub se sube al conectarlo.
+
+**Cuánto dura.** En GitHub, para siempre: los archivos se quedan en el repositorio
+hasta que los borres (cada día ocupa unos 15 KB, unos 5 MB al año). Solo en el
+navegador, hasta que borres los datos del sitio; si se llena (unos 2,5 MB), olvida
+primero los días más antiguos que ya están en GitHub. La clave de GitHub caduca en
+la fecha que elegiste al crearla: cuando pase, la web avisa de que no puede subir y
+guarda los días como pendientes en el navegador; crea otra clave y vuelve a
+conectar para subirlos.
 
 ## Instalación
 
@@ -211,6 +228,13 @@ El scanner respeta el límite de peso por minuto de Binance (lo lee de
 límite y reintenta ante errores `429` o de red. Un escaneo de spot + futuros en
 USDT supone una petición de velas por par (del orden de 400 en spot y 500 en
 futuros), por debajo del límite por minuto de ambos mercados.
+
+En la versión web, cada petición tiene un tiempo máximo (20 s; más para las
+listas grandes): si Binance no responde se corta y se repite, hasta 4 veces. Los
+pares que aun así fallan se vuelven a intentar al final, más despacio, y los que
+sigan sin responder se nombran en el aviso. Si fallan muchos seguidos (se cortó la
+conexión), el escaneo de ese mercado se detiene y lo dice. El límite de peso se
+comparte entre el escáner, los gráficos y el seguimiento.
 
 Binance bloquea su API desde algunos países y desde servidores en la nube
 (respuesta `451`/`403`). En spot el scanner pasa entonces a

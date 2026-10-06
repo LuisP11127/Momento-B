@@ -3,6 +3,8 @@
     python -m momento_b.web docs            # escribe docs/index.html
     python -m momento_b.web site --bstocks  # además site/bstocks.json con las acciones tokenizadas
     python -m momento_b.web site --seguimiento docs/seguimiento  # y site/seguimiento.json con todos los días
+
+Junto a index.html se escribe icono.png (el icono de la pestaña y de la pantalla de inicio del móvil).
 """
 
 from __future__ import annotations
@@ -10,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Sequence
@@ -21,6 +24,9 @@ from .scanner import is_tokenized_stock
 
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 COIN_FIELDS = ("mercado", "simbolo", "base", "quote", "precio", "hora", "intervalo")
+STARS_FILE = "estrellas.json"  # monedas con estrella, en la misma carpeta que los días de seguimiento
+STAR_KEY_RE = re.compile(r"^[a-z]+:\S+$")
+ICON_PATH = Path(__file__).with_name("icono.png")
 
 
 def collect_tracking(folder: Path) -> list[dict]:
@@ -30,6 +36,8 @@ def collect_tracking(folder: Path) -> list[dict]:
     """
     days = {}
     for path in sorted(Path(folder).glob("*.json")):
+        if path.name == STARS_FILE:
+            continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -51,6 +59,30 @@ def collect_tracking(folder: Path) -> list[dict]:
         ]
         days[fecha] = {"fecha": fecha, "monedas": coins}
     return [days[fecha] for fecha in sorted(days, reverse=True)]
+
+
+def collect_stars(folder: Path) -> dict:
+    """Estrellas que la web guarda en estrellas.json: {"spot:BTCUSDT": {"activa": true, "hora": "..."}}.
+
+    Se publican también las quitadas (activa false): con su hora, la web sabe qué cambio es el más reciente.
+    """
+    path = Path(folder) / STARS_FILE
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        print(f"Aviso: {path} no es un JSON válido; se ignora.")
+        return {}
+    stars = data.get("estrellas") if isinstance(data, dict) else None
+    if not isinstance(stars, dict):
+        print(f"Aviso: {path} no tiene el formato de las estrellas; se ignora.")
+        return {}
+    return {
+        key: {"activa": value["activa"], "hora": str(value.get("hora") or "")}
+        for key, value in sorted(stars.items())
+        if STAR_KEY_RE.match(key) and isinstance(value, dict) and isinstance(value.get("activa"), bool)
+    }
 
 
 def render_app() -> str:
@@ -77,10 +109,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     out = Path(args.carpeta)
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render_app(), encoding="utf-8")
+    shutil.copyfile(ICON_PATH, out / ICON_PATH.name)
     print(f"Web escrita en {out / 'index.html'}")
     if args.seguimiento:
         days = collect_tracking(Path(args.seguimiento))
-        data = {"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"), "dias": days}
+        data = {"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"), "dias": days,
+                "estrellas": collect_stars(Path(args.seguimiento))}
         (out / "seguimiento.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"{len(days)} días de seguimiento en {out / 'seguimiento.json'}")
     if args.bstocks:
