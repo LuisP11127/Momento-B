@@ -65,14 +65,19 @@ En la pestaña **Seguimiento** de la web:
 - un apartado por día (el más reciente abierto) con las columnas **Moneda**,
   **Precio** del día del seguimiento (el del momento del escaneo), **Precio actual**,
   **Mínimo** y **Máximo** desde la hora del escaneo (con cuánto se alejaron del
-  precio del seguimiento), **Variación** (del precio del seguimiento al actual) y la
-  hora del **Escaneo**, y un resumen: media, cuántas suben y bajan, la mejor y la
+  precio del seguimiento), **Rumbo al 50**, **Variación** (del precio del seguimiento
+  al actual) y la hora del **Escaneo**, y un resumen: media, cuántas suben y bajan, la mejor y la
   peor. Mínimo, máximo y variación cuentan solo lo que pasó después del escaneo. Los
   precios se piden a Binance desde tu navegador (spot y futuros) y se actualizan
   cada minuto. El mínimo y el máximo salen de las velas de Binance desde ese
   momento (el primer tramo con velas de 1 minuto, empezando en el minuto del
   escaneo); se guardan en el navegador y en cada visita solo se descargan las velas
   nuevas;
+- **Rumbo al 50**: cuántos días tardó el máximo en llegar a **+50 %** sobre el precio
+  del seguimiento, contados desde la hora del escaneo y redondeando hacia arriba (en
+  las primeras 24 horas es «1 día»), y la fecha en que llegó. Esa fila se pinta de
+  verde y se queda así aunque luego baje. El momento se busca con velas de 1 o 5
+  minutos;
 - **estrellas**: la estrella de cada moneda (en las tarjetas del escáner, en el
   gráfico ampliado o en la tabla del seguimiento) la deja fijada, y en el
   seguimiento aparece primero en cada día donde esté. Cuenta el mercado: la de spot
@@ -199,6 +204,16 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
 - Filtros por mercado (**Todos**, **Spot**, **Futuros** y **No repetidas**, que muestra cada
   moneda una sola vez y, si está en los dos mercados, se queda con la de spot), búsqueda
   por símbolo y los mismos órdenes que en la terminal.
+- **Filtros** después de escanear (no hace falta volver a escanear; se combinan entre sí,
+  se recuerdan en el navegador y el seguimiento guarda siempre todas las monedas):
+  - **Solo velas cerradas**: quita las monedas que cumplen la condición solo gracias a la
+    vela que todavía se está formando;
+  - **Cruce reciente**: la MA rápida cruzó por encima de la media hace como mucho N velas
+    (de la temporalidad del escaneo);
+  - **Acumulación**: velas diarias seguidas, hasta la última cerrada, con el cuerpo
+    (de la apertura al cierre, sin mechas) entre −X % y +X % durante al menos N días.
+    La vela de hoy no cuenta. Al activarlo los gráficos pasan a 1D, una franja marca esas
+    velas y cada tarjeta dice cuántos días lleva y entre qué variaciones.
 - «Cargar informe» (o arrastrar un archivo a la página) abre otro informe `.html`
   o un `.json` generado con `--json`.
 
@@ -269,3 +284,18 @@ uso de Binance, así que no es una opción recomendada.
 pip install pytest
 python -m pytest
 ```
+
+Pruebas de la web en el navegador (Chromium con [Playwright](https://playwright.dev/)),
+con Binance, GitHub y GitHub Pages simulados, así que no necesitan conexión con ellos:
+
+```bash
+cd tests/web
+npm ci
+npx playwright install chromium
+npx playwright test
+```
+
+GitHub las corre en cada cambio (workflow `Scanner`, job `web`). Prueban el escáner, el
+seguimiento, «Rumbo al 50», los filtros, las estrellas, el guardado en GitHub y que el
+escaneo no se cuelgue con una red inestable. Usan `docs/index.html`: tras cambiar la
+plantilla, regenérala con `python -m momento_b.web docs`.

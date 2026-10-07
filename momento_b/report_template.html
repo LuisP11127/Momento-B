@@ -22,6 +22,8 @@
   --ma-mid: #BE2C8A;
   --ma-slow: #6744D4;
   --star: #B47C00;
+  --hit-bg: rgba(11, 154, 106, 0.12);
+  --hit-bg-hover: rgba(11, 154, 106, 0.2);
   --font-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
   --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -33,6 +35,7 @@
     --bg: #0B1017; --panel: #121923; --sunken: #0E141C; --line: #243142; --grid: #19222E;
     --fg: #E4E9F0; --muted: #8C99AC; --accent: #82A5FF; --up: #2CC088; --down: #F2566D;
     --ma-fast: #F0B90B; --ma-mid: #EA4CB9; --ma-slow: #A98DFF; --star: #F0B90B;
+    --hit-bg: rgba(44, 192, 136, 0.14); --hit-bg-hover: rgba(44, 192, 136, 0.22);
     color-scheme: dark;
   }
 }
@@ -40,6 +43,7 @@
   --bg: #0B1017; --panel: #121923; --sunken: #0E141C; --line: #243142; --grid: #19222E;
   --fg: #E4E9F0; --muted: #8C99AC; --accent: #82A5FF; --up: #2CC088; --down: #F2566D;
   --ma-fast: #F0B90B; --ma-mid: #EA4CB9; --ma-slow: #A98DFF; --star: #F0B90B;
+  --hit-bg: rgba(44, 192, 136, 0.14); --hit-bg-hover: rgba(44, 192, 136, 0.22);
   color-scheme: dark;
 }
 
@@ -97,6 +101,15 @@ input[type="search"] { width: 13rem; max-width: 100%; }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--panel); }
 .seg .count { font-family: var(--font-mono); font-size: 12px; opacity: 0.8; margin-left: 4px; }
 .toolbar .spacer { flex: 1 1 0; }
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 9px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; font-size: 13px; color: var(--muted); }
+.filters-title { color: var(--fg); font-weight: 600; }
+.filter { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.filter label { color: var(--fg); cursor: pointer; }
+.filter input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--fg); cursor: pointer; }
+.filter input[type="number"] { width: 4.4rem; padding: 4px 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; color: var(--fg); font-family: var(--font-mono); }
+.filter input[type="number"]:invalid { border-color: var(--down); }
+.acc-row { font-size: 12.5px; color: var(--muted); }
+.acc-row b { font: 500 12.5px var(--font-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--col)), 1fr)); gap: 12px; }
 .grid.size-s { --col: 250px; --mini-h: 130px; }
@@ -185,12 +198,17 @@ body.tracking .scan-only { display: none !important; }
 .coins .star { width: 28px; height: 28px; margin: -6px 4px -6px -8px; vertical-align: middle; }
 .coins .muted { color: var(--muted); font-size: 13px; }
 .coins .rng { margin-left: 6px; font-size: 12px; }
+/* «Rumbo al 50»: la fila de una moneda que ya llegó a +50 % queda en verde. */
+.coins tbody tr.hit50 { background: var(--hit-bg); }
+.coins tbody tr.hit50:hover td, .coins tbody tr.hit50:focus-visible td { background: var(--hit-bg-hover); }
+.coins .c-r50.hit { color: var(--up); font-weight: 500; }
+.coins .c-r50 .rng { color: var(--muted); font-weight: 400; }
 .chgbar { display: inline-block; position: relative; width: 52px; height: 6px; margin-left: 10px; vertical-align: middle; background: var(--grid); border-radius: 3px; overflow: hidden; }
 .chgbar i { position: absolute; top: 0; bottom: 0; left: 0; background: currentColor; border-radius: 3px; }
 /* En el móvil cada moneda ocupa dos líneas: moneda y variación arriba, precio entonces y ahora debajo. */
 @media (max-width: 640px) {
   .coins thead, .coins .col-scan, .chgbar { display: none; }
-  .coins tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "coin pct" "then now" "low high"; gap: 2px 12px; padding: 9px 12px; border-bottom: 1px solid var(--grid); }
+  .coins tbody tr { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "coin pct" "then now" "low high" "r50 r50"; gap: 2px 12px; padding: 9px 12px; border-bottom: 1px solid var(--grid); }
   .coins tbody tr:last-child { border-bottom: 0; }
   .coins td { padding: 0; border: 0; }
   .coins .c-coin { grid-area: coin; }
@@ -199,8 +217,10 @@ body.tracking .scan-only { display: none !important; }
   .coins .c-now { grid-area: now; font-size: 12.5px; }
   .coins .c-low { grid-area: low; text-align: left; font-size: 12.5px; }
   .coins .c-high { grid-area: high; font-size: 12.5px; }
+  .coins .c-r50 { grid-area: r50; text-align: left; font-size: 12.5px; }
+  .coins .c-r50:not(.hit) { display: none; }
   .coins .rng { font-size: 11.5px; }
-  .coins .c-then::before, .coins .c-now::before, .coins .c-low::before, .coins .c-high::before { content: attr(data-label) " "; color: var(--muted); font-family: var(--font-body); }
+  .coins .c-then::before, .coins .c-now::before, .coins .c-low::before, .coins .c-high::before, .coins .c-r50::before { content: attr(data-label) " "; color: var(--muted); font-family: var(--font-body); font-weight: 400; }
 }
 .empty { padding: 28px 16px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; }
 .foot { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; }
@@ -302,6 +322,23 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     </span>
   </div>
 
+  <div class="filters scan-only" id="filters" role="group" aria-label="Filtros">
+    <b class="filters-title">Filtros</b>
+    <span class="filter">
+      <input type="checkbox" id="f-closed"><label for="f-closed">Solo velas cerradas</label>
+    </span>
+    <span class="filter">
+      <input type="checkbox" id="f-cross"><label for="f-cross">Cruce reciente:</label>
+      máx. <input type="number" id="f-cross-n" min="1" step="1" value="5" inputmode="numeric" aria-label="Velas como máximo desde el cruce de MA rápida sobre MA media"> velas
+    </span>
+    <span class="filter">
+      <input type="checkbox" id="f-acc"><label for="f-acc">Acumulación:</label>
+      velas entre ± <input type="number" id="f-acc-pct" min="0.01" step="any" value="4" inputmode="decimal" aria-label="Variación máxima de cada vela diaria, en porcentaje"> %
+      durante al menos <input type="number" id="f-acc-days" min="1" step="1" value="5" inputmode="numeric" aria-label="Días seguidos como mínimo"> días
+    </span>
+    <span class="scan-status" id="f-count" aria-live="polite"></span>
+  </div>
+
   <main class="grid scan-only size-m" id="grid" aria-live="polite"></main>
   <p class="empty scan-only" id="empty" hidden></p>
 
@@ -396,7 +433,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const $ = (id) => document.getElementById(id);
   const MARKET_NAMES = { spot: "Spot", futures: "Futuros" };
   const SIZES = { s: 90, m: 120, l: 160 };  // velas visibles en cada mini-gráfico
-  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null, freshSince: 0, trackSaved: null };
+  const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null, freshSince: 0, trackSaved: null,
+    filters: { cerradas: false, cruce: false, cruceN: 5, acum: false, acumPct: 4, acumDias: 5 } };
   const minis = new Map();  // elemento .mini -> entrada de gráfico
   let big = null;
   let lastFocus = null;
@@ -431,6 +469,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     return v.toFixed(0);
   }
   function bars(it) { return it.velas_desde_cruce == null ? "-" : it.velas_desde_cruce + (it.cruce_visible === false ? "+" : ""); }
+  const DAY_MS = 86400000;
   function sma(values, period) {
     const out = new Array(values.length).fill(null);
     let sum = 0;
@@ -540,6 +579,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     $("sort").value = state.sort;
     if (!state.tf) state.tf = DEFAULT_TF;
     $("toolbar").hidden = false;
+    $("filters").hidden = false;
     renderTf();
     renderHeader();
     renderNotice();
@@ -597,6 +637,114 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (text) n.append(text);
   }
 
+  // ---------- filtros (después del escaneo) ----------
+  // Reducen las monedas del escaneo sin volver a escanear; el seguimiento guarda siempre todas.
+  const tfMs = (tf) => (TF_MINUTES[tf] || 0) * 60000;
+  // Las velas sin la última si todavía no ha cerrado.
+  function closedRows(rows, tf) {
+    const n = rows.length;
+    return n && rows[n - 1][0] + tfMs(tf) > Date.now() ? rows.slice(0, n - 1) : rows;
+  }
+  // En la última vela: ¿se cumple la condición? y cuántas velas seguidas lleva la MA rápida sobre la media.
+  function maState(closes) {
+    const [fp, mp, sp] = state.data.medias || [7, 25, 99];
+    const f = sma(closes, fp), m = sma(closes, mp), s = sma(closes, sp);
+    const i = closes.length - 1;
+    if (i < 0 || f[i] == null || m[i] == null) return null;
+    let n = 0;
+    for (let j = i; j >= 0 && f[j] != null && m[j] != null && f[j] > m[j]; j--) n++;
+    return { ok: s[i] != null && f[i] > m[i] && f[i] < s[i], bars: n, seen: n < closes.length - mp + 1 };
+  }
+  // Acumulación: velas diarias cerradas seguidas, hasta la última, con el cuerpo (apertura → cierre) dentro de ±pct.
+  // undefined = faltan las velas diarias de esa moneda.
+  function accumulation(it, pct) {
+    const rows = rowsFor(it, "1d");
+    if (!rows) return undefined;
+    const days = closedRows(rows, "1d");
+    let n = 0, min = Infinity, max = -Infinity;
+    for (let i = days.length - 1; i >= 0; i--) {
+      const open = days[i][1], body = open ? (days[i][4] - open) / open * 100 : 0;
+      if (Math.abs(body) > pct + 1e-9) break;
+      n++;
+      min = Math.min(min, body);
+      max = Math.max(max, body);
+    }
+    return n ? { days: n, min, max, from: days[days.length - n][0], to: days[days.length - 1][0] } : { days: 0 };
+  }
+  const filtersOn = () => state.filters.cerradas || state.filters.cruce || state.filters.acum;
+  function passes(it) {
+    const f = state.filters;
+    it._acc = null;
+    if (f.cerradas || f.cruce) {
+      const rows = rowsFor(it, state.data.intervalo);
+      const st = rows ? maState((f.cerradas ? closedRows(rows, state.data.intervalo) : rows).map((k) => k[4])) : null;
+      if (f.cerradas && !(st && st.ok)) return false;
+      if (f.cruce) {
+        const n = st ? st.bars : it.velas_desde_cruce, seen = st ? st.seen : it.cruce_visible !== false;
+        if (!(n >= 1 && seen && n <= f.cruceN)) return false;
+      }
+    }
+    if (f.acum) {
+      const acc = accumulation(it, f.acumPct);
+      if (!acc || acc.days < f.acumDias) return false;
+      it._acc = acc;
+    }
+    return true;
+  }
+  function accRow(it, tag) {
+    const a = it._acc;
+    if (!a || !a.days) return null;
+    return h(tag || "div", { class: "acc-row", title: "Velas diarias seguidas, hasta la última cerrada, con el cuerpo (apertura → cierre) dentro de ±" + state.filters.acumPct + " %" },
+      "Acumulación ", h("b", { text: daysText(a.days) }), " · velas entre ", h("b", { text: fmtPct(a.min) }), " y ", h("b", { text: fmtPct(a.max) }));
+  }
+  function readFilters() {
+    const num = (id, min, int) => { const v = parseFloat($(id).value); return isFinite(v) && v >= min ? (int ? Math.floor(v) : v) : null; };
+    const f = state.filters;
+    f.cerradas = $("f-closed").checked;
+    f.cruceN = num("f-cross-n", 1, true) || f.cruceN;
+    f.cruce = $("f-cross").checked;
+    f.acumPct = num("f-acc-pct", 0.01, false) || f.acumPct;
+    f.acumDias = num("f-acc-days", 1, true) || f.acumDias;
+    f.acum = $("f-acc").checked;
+    store.set("filtros", JSON.stringify(f));
+  }
+  function showFilters() {
+    const f = state.filters;
+    $("f-closed").checked = f.cerradas;
+    $("f-cross").checked = f.cruce;
+    $("f-cross-n").value = f.cruceN;
+    $("f-acc").checked = f.acum;
+    $("f-acc-pct").value = f.acumPct;
+    $("f-acc-days").value = f.acumDias;
+  }
+  function onFilterChange(e) {
+    const before = JSON.stringify(state.filters), wasAcum = state.filters.acum;
+    // Escribir un número activa su filtro.
+    if (e && e.target.type === "number" && e.target.value !== "") e.target.closest(".filter").querySelector("input[type=checkbox]").checked = true;
+    readFilters();
+    // Sin cambios no se redibuja: si no, al salir del campo con un clic en una tarjeta, ese clic se perdía.
+    if (JSON.stringify(state.filters) === before) return;
+    if (state.filters.acum && !wasAcum && state.tf !== "1d") {  // la acumulación se ve en velas diarias
+      state.tf = "1d";
+      state.freshSince = Date.now();
+      renderTf();
+    }
+    if (state.data) renderGrid();
+  }
+  let filterTimer = 0;
+  for (const id of ["f-closed", "f-cross", "f-acc"]) $(id).addEventListener("change", onFilterChange);
+  for (const id of ["f-cross-n", "f-acc-pct", "f-acc-days"]) {
+    $(id).addEventListener("input", (e) => { clearTimeout(filterTimer); filterTimer = setTimeout(() => onFilterChange(e), 350); });
+    $(id).addEventListener("change", (e) => { clearTimeout(filterTimer); onFilterChange(e); showFilters(); });  // vacío o no válido: vuelve el valor en uso
+  }
+  try {
+    const saved = JSON.parse(store.get("filtros") || "null");
+    if (saved && typeof saved === "object") {
+      for (const k of Object.keys(state.filters)) if (typeof saved[k] === typeof state.filters[k]) state.filters[k] = saved[k];
+    }
+  } catch (err) { /* filtros guardados no válidos */ }
+  showFilters();
+
   // ---------- cuadrícula ----------
   const SORTS = {
     distancia: (a, b) => a.dist_ma_lenta_pct - b.dist_ma_lenta_pct,
@@ -651,6 +799,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       maLegend(it, null, state.tf),
       mini,
       tfChips(it),
+      accRow(it),
       h("div", { class: "card-foot" },
         h("span", { class: "tf-tag", text: tfLabel(state.data.intervalo), title: "Datos del escaneo en " + tfLabel(state.data.intervalo) }),
         h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
@@ -691,9 +840,17 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const q = state.q.trim().toUpperCase();
     const pool = state.market === "unicas" ? uniqueItems(state.items)
       : state.items.filter((it) => state.market === "todos" || it.mercado === state.market);
-    state.view = pool
-      .filter((it) => !q || it.simbolo.toUpperCase().includes(q))
-      .sort(SORTS[state.sort] || SORTS.distancia);
+    const found = pool.filter((it) => !q || it.simbolo.toUpperCase().includes(q));
+    state.view = found.filter(passes).sort(SORTS[state.sort] || SORTS.distancia);
+    // Acumulación sin velas diarias de alguna moneda (informes antiguos o una descarga que falló): se piden una vez.
+    const missing = state.filters.acum ? found.filter((it) => !it._d1Tried && accumulation(it, 1) === undefined) : [];
+    if (missing.length) {
+      missing.forEach((it) => { it._d1Tried = true; });
+      Promise.all(missing.map((it) => loadCandles(it, "1d"))).then(() => renderGrid());
+    }
+    $("f-count").textContent = filtersOn()
+      ? "Mostrando " + state.view.length + " de " + found.length + (missing.length ? " · cargando velas diarias…" : "")
+      : "";
     state.view.forEach((it, i) => {
       const el = card(it, i);
       grid.append(el);
@@ -704,7 +861,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     empty.hidden = state.view.length > 0;
     empty.textContent = state.items.length === 0
       ? "Ninguna moneda cumple la condición en este escaneo."
-      : "Ninguna moneda coincide con el filtro.";
+      : filtersOn() ? "Ninguna moneda pasa los filtros." : "Ninguna moneda coincide con el filtro.";
   }
 
   // ---------- gráficos ----------
@@ -730,6 +887,11 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       entry.volume.setData(seriesData(entry.item, entry.tf).volume.map((v) => ({ time: v.time, value: v.value, color: alpha(v.up ? t.up : t.down) })));
     }
     if (entry.entryLine) entry.entryLine.applyOptions({ color: t.accent });
+    if (entry.band) {
+      const tint = t.accent.startsWith("#") && t.accent.length === 7 ? t.accent + "24" : t.accent;
+      entry.band.applyOptions({ lineColor: "rgba(0, 0, 0, 0)", topColor: tint, bottomColor: tint });
+      entry.band.setData(entry.band.times.map((time) => ({ time, value: 1 })));
+    }
     if (entry.marker) entry.candles.setMarkers([Object.assign({}, entry.marker, { color: t.accent })]);
   }
   function buildChart(el, it, isBig, tf) {
@@ -742,6 +904,20 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const chart = LightweightCharts.createChart(el, chartOptions(t, isBig));
     const d = decimals(it.precio);
     const priceFormat = { type: "price", precision: d, minMove: Math.pow(10, -d) };
+    // Franja de fondo sobre las velas de la acumulación (antes que las velas, para quedar detrás).
+    let band = null;
+    const acc = state.filters.acum && it._acc && it._acc.days ? it._acc : null;
+    if (acc) {
+      const rows = rowsFor(it, tf), span = tfMs(tf);
+      const times = rows.flatMap((k, i) => (k[0] < acc.to + DAY_MS && k[0] + span > acc.from ? [sd.candles[i].time] : []));
+      if (times.length) {
+        // Área en una escala propia de 0 a 1: rellena de arriba abajo, solo entre la primera y la última vela.
+        band = chart.addAreaSeries({ priceScaleId: "band", lineWidth: 1, lastValueVisible: false, priceLineVisible: false,
+          crosshairMarkerVisible: false, autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } }) });
+        chart.priceScale("band").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
+        band.times = times;
+      }
+    }
     const candles = chart.addCandlestickSeries({ priceFormat });
     candles.setData(sd.candles);
     const mas = sd.mas.map((data) => {
@@ -754,7 +930,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol", lastValueVisible: false, priceLineVisible: false });
       chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
-    const entry = { chart, candles, mas, volume, item: it, isBig, tf };
+    const entry = { chart, candles, mas, volume, band, item: it, isBig, tf };
     if (isBig && it._seguimiento) markTracking(entry, sd, rowsFor(it, tf), t);
     applyColors(entry, t);
     const n = sd.candles.length;
@@ -852,6 +1028,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
         h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
         h("span", null, "Vol 24h ", h("b", { text: fmtVol(it.volumen_24h) })),
+        accRow(it, "span"),
         h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
     }
     const link = $("v-link");
@@ -866,12 +1043,14 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function trackStats(it, index) {
     const sg = it._seguimiento;
     const pct = it.precio && sg.precio ? (it.precio - sg.precio) / sg.precio * 100 : null;
+    const rb = rumboOf(sg.fecha, { mercado: it.mercado, simbolo: it.simbolo, precio: sg.precio, hora: sg.hora }, it.precio);
     const stats = $("v-stats");
     stats.textContent = "";
     stats.append(
       h("span", { class: "tf-tag", text: "Seguimiento " + dayTitle(sg.fecha) }),
       h("span", null, "Precio entonces ", h("b", { text: fmtPrice(sg.precio) })),
       pct == null ? null : h("span", null, "Variación ", h("b", { class: pct >= 0 ? "up" : "down", text: fmtPct(pct) })),
+      rb ? h("span", null, "Llegó a +50 % el ", h("b", { class: "up", text: hitDate(rb.at) }), " (" + daysText(rb.days) + ")") : null,
       h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
   }
   function drawBig(it, index) {
@@ -1723,46 +1902,65 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (endTime) params.endTime = String(endTime);
     return api.get(cfg.klines, params, cfg.klinesW(limit));
   }
-  function addExtremes(acc, rows) {
+  // «Rumbo al 50»: además del mínimo y el máximo se guarda cuándo el máximo llegó por primera vez a +50 %
+  // sobre el precio del seguimiento (apertura de la primera vela cuyo máximo lo alcanzó).
+  const HIT_RATIO = 1.5;
+  function addExtremes(acc, rows, iv) {
     for (const k of rows) {
       const high = +k[2], low = +k[3];
       if (high > acc.high) acc.high = high;
       if (low < acc.low) acc.low = low;
+      if (acc.hit == null && high >= acc.target) { acc.hit = Number(k[0]); acc.hitIv = iv; }
       acc.until = Math.max(acc.until, Number(k[0]));  // la última vela (aún abierta) se vuelve a pedir la próxima vez
     }
   }
+  // Si el +50 % cayó en una vela grande (1h, 4h, 1d), se busca el momento dentro de ella con velas de 1 o 5 minutos.
+  async function refineHit(c, acc) {
+    if (acc.hit == null || acc.hitIv === "1m") return;
+    const span = IV_MS[acc.hitIv], fine = pickInterval(span);
+    try {
+      const rows = await klinesSince(c, fine, acc.hit, acc.hit + span - 1);
+      const first = rows.find((k) => +k[2] >= acc.target);
+      if (first) acc.hit = Number(first[0]);
+    } catch (err) { /* se queda la hora de la vela grande */ }
+  }
   async function computeRange(fecha, c) {
-    const key = rangeKey(fecha, c), now = Date.now(), start = Date.parse(c.hora);
+    const key = rangeKey(fecha, c), now = Date.now(), start = Date.parse(c.hora), target = c.precio * HIT_RATIO;
     const cached = ranges[key];
     let acc;
-    if (cached && !cached.error) {
-      acc = { low: cached.low, high: cached.high, until: cached.until };
+    // Los guardados de antes de «Rumbo al 50» que ya pasaron el +50 % se calculan de nuevo para saber cuándo.
+    if (cached && !cached.error && !(cached.hit == null && cached.high >= target)) {
+      acc = { low: cached.low, high: cached.high, until: cached.until, hit: cached.hit == null ? null : cached.hit, target };
       const iv = pickInterval(now - acc.until);
-      addExtremes(acc, await klinesSince(c, iv, Math.floor(acc.until / IV_MS[iv]) * IV_MS[iv]));
+      addExtremes(acc, await klinesSince(c, iv, Math.floor(acc.until / IV_MS[iv]) * IV_MS[iv]), iv);
     } else {
-      acc = { low: c.precio, high: c.precio, until: start };
+      acc = { low: c.precio, high: c.precio, until: start, hit: null, target };
       const iv = pickInterval(now - start);
       const step = IV_MS[iv];
       const coarseStart = iv === "1m" ? start : Math.ceil(start / step) * step;
       const fineEnd = Math.min(coarseStart, now);
       if (iv === "1m") {
-        addExtremes(acc, await klinesSince(c, "1m", Math.floor(start / 60000) * 60000));
+        addExtremes(acc, await klinesSince(c, "1m", Math.floor(start / 60000) * 60000), "1m");
       } else {
         if (fineEnd > start) {  // de la hora del escaneo hasta la primera vela grande completa
           const fine = fineEnd - start <= 990 * 60000 ? "1m" : "5m";
-          addExtremes(acc, await klinesSince(c, fine, Math.floor(start / IV_MS[fine]) * IV_MS[fine], fineEnd - 1));
+          addExtremes(acc, await klinesSince(c, fine, Math.floor(start / IV_MS[fine]) * IV_MS[fine], fineEnd - 1), fine);
         }
-        if (coarseStart < now) addExtremes(acc, await klinesSince(c, iv, coarseStart));
+        if (coarseStart < now) addExtremes(acc, await klinesSince(c, iv, coarseStart), iv);
       }
     }
-    ranges[key] = { low: acc.low, high: acc.high, until: acc.until, checked: now };
+    if (acc.hitIv) await refineHit(c, acc);
+    const entry = { low: acc.low, high: acc.high, until: acc.until, checked: now };
+    if (acc.hit != null) entry.hit = Math.max(acc.hit, start);  // la primera vela de 1 minuto empieza antes del escaneo
+    ranges[key] = entry;
   }
   function wantRanges(fecha, coins) {
     const now = Date.now();
     for (const c of coins) {
       if (!API[c.mercado] || !isFinite(Date.parse(c.hora)) || !c.precio) continue;
       const key = rangeKey(fecha, c), r = ranges[key];
-      if (r && now - r.checked < (r.error ? RANGE_RETRY : RANGE_TTL)) continue;
+      const stale = r && !r.error && r.hit == null && r.high >= c.precio * HIT_RATIO;  // guardado sin la hora del +50 %
+      if (r && !stale && now - r.checked < (r.error ? RANGE_RETRY : RANGE_TTL)) continue;
       if (!rangeWanted.has(key) && !rangeActive.has(key)) rangeWanted.set(key, { fecha, coin: c });
     }
     pumpRanges();
@@ -1817,11 +2015,43 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     fillRange(td, fecha, c, kind);
     return td;
   }
+  // Cuándo llegó el máximo a +50 % (null si todavía no). Si el precio actual ya lo pasó pero las velas aún no
+  // se han vuelto a pedir, cuenta desde ahora hasta que lleguen.
+  function rumboOf(fecha, c, ahora) {
+    const start = Date.parse(c.hora);
+    if (!c.precio || !isFinite(start)) return null;
+    const r = ranges[rangeKey(fecha, c)];
+    let at = r && !r.error && r.hit != null ? r.hit : null;
+    if (at == null && ahora != null && ahora >= c.precio * HIT_RATIO) at = Date.now();
+    if (at == null) return null;
+    at = Math.max(at, start);
+    return { at, days: Math.max(1, Math.ceil((at - start) / DAY_MS)) };  // dentro de las primeras 24 h = 1 día
+  }
+  const daysText = (n) => n + (n === 1 ? " día" : " días");
+  const hitDate = (ms) => new Date(ms).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  function fillRumbo(td, fecha, c) {
+    if (!td) return;
+    const rb = rumboOf(fecha, c, c.ahora);
+    const tr = td.closest("tr");
+    if (tr) tr.classList.toggle("hit50", !!rb);
+    td.classList.toggle("hit", !!rb);
+    td.textContent = "";
+    if (!rb) {
+      const r = ranges[rangeKey(fecha, c)];
+      td.append(r ? "—" : "…");
+      td.title = r ? "Todavía no llegó a +50 % sobre el precio del seguimiento" : "Calculando…";
+      return;
+    }
+    td.append(daysText(rb.days), h("small", { class: "rng", text: hitDate(rb.at) }));
+    td.title = "Llegó a +50 % el " + new Date(rb.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" }) +
+      ", " + daysText(rb.days) + " después del escaneo";
+  }
   function showRange(key) {
     for (const tr of document.querySelectorAll("#track-days tr[data-key]")) {
       if (tr.dataset.key !== key || !tr._coin) continue;
       fillRange(tr.querySelector(".c-low"), tr._fecha, tr._coin, "low");
       fillRange(tr.querySelector(".c-high"), tr._fecha, tr._coin, "high");
+      fillRumbo(tr.querySelector(".c-r50"), tr._fecha, tr._coin);
     }
   }
 
@@ -1889,6 +2119,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       h("th", { class: "r", text: "Precio actual" }),
       h("th", { class: "r", text: "Mínimo", title: "Precio más bajo desde la hora del escaneo" }),
       h("th", { class: "r", text: "Máximo", title: "Precio más alto desde la hora del escaneo" }),
+      h("th", { class: "r", text: "Rumbo al 50", title: "Días desde el escaneo hasta que el máximo llegó a +50 % sobre el precio del seguimiento, y la fecha" }),
       h("th", { class: "r", text: "Variación", title: "Del precio del escaneo al precio actual" }),
       h("th", { class: "col-scan", text: "Escaneo" }))));
     const body = h("tbody");
@@ -1900,11 +2131,13 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         h("td", { class: "r num c-now", "data-label": "ahora", text: c.ahora == null ? "—" : fmtPrice(c.ahora) }),
         rangeCell(day.fecha, c, "low"),
         rangeCell(day.fecha, c, "high"),
+        h("td", { class: "r num c-r50", "data-label": "a +50 %" }),
         h("td", { class: "r num c-pct " + (c.pct == null ? "" : c.pct >= 0 ? "up" : "down") }, c.pct == null ? "—" : fmtPct(c.pct), changeBar(c.pct)),
         h("td", { class: "col-scan muted", text: timeOf(c.hora) + (c.intervalo ? " · velas " + tfLabel(c.intervalo) : "") }));
       tr.dataset.key = rangeKey(day.fecha, c);
       tr._coin = c;
       tr._fecha = day.fecha;
+      fillRumbo(tr.querySelector(".c-r50"), day.fecha, c);
       const open = () => openTrackedChart(day, coins, i);
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
@@ -2067,6 +2300,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     setData(initial);
   } else {
     $("toolbar").hidden = true;
+    $("filters").hidden = true;
     renderNotice("Listo para escanear. ", "Pulsa «Escanear» para buscar en Binance las monedas con MA(7) por encima de MA(25) y por debajo de MA(99). También puedes abrir un informe con «Cargar informe».");
   }
   if (!window.LightweightCharts) {
