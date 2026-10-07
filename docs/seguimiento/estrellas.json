@@ -1,5 +1,9 @@
 {
  "estrellas": {
+  "futures:ICNTUSDT": {
+   "activa": true,
+   "hora": "2026-10-07T15:27:24.593Z"
+  },
   "futures:INUSDT": {
    "activa": true,
    "hora": "2026-10-07T15:24:44.605Z"
