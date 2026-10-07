@@ -1,0 +1,12 @@
+{
+  "name": "momento-b-web-tests",
+  "private": true,
+  "description": "Pruebas de la web en el navegador (Playwright), con Binance y GitHub simulados",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "lightweight-charts": "4.2.3"
+  }
+}
