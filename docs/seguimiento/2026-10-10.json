@@ -1,0 +1,176 @@
+{
+ "fecha": "2026-10-10",
+ "monedas": [
+  {
+   "mercado": "spot",
+   "simbolo": "DODOUSDT",
+   "base": "DODO",
+   "quote": "USDT",
+   "precio": 0.01867,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "币安人生USDT",
+   "base": "币安人生",
+   "quote": "USDT",
+   "precio": 0.5992,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "UUSDT",
+   "base": "U",
+   "quote": "USDT",
+   "precio": 1.0002,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "AIGENSYNUSDT",
+   "base": "AIGENSYN",
+   "quote": "USDT",
+   "precio": 0.02053,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "DODOXUSDT",
+   "base": "DODOX",
+   "quote": "USDT",
+   "precio": 0.018718,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ICNTUSDT",
+   "base": "ICNT",
+   "quote": "USDT",
+   "precio": 0.1017,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AINUSDT",
+   "base": "AIN",
+   "quote": "USDT",
+   "precio": 0.04504,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "VELVETUSDT",
+   "base": "VELVET",
+   "quote": "USDT",
+   "precio": 0.07238,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ESPORTSUSDT",
+   "base": "ESPORTS",
+   "quote": "USDT",
+   "precio": 0.01036,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AIOUSDT",
+   "base": "AIO",
+   "quote": "USDT",
+   "precio": 0.042,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "币安人生USDT",
+   "base": "币安人生",
+   "quote": "USDT",
+   "precio": 0.5988,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "STABLEUSDT",
+   "base": "STABLE",
+   "quote": "USDT",
+   "precio": 0.02718,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "JCTUSDT",
+   "base": "JCT",
+   "quote": "USDT",
+   "precio": 0.001801,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "GUAUSDT",
+   "base": "GUA",
+   "quote": "USDT",
+   "precio": 0.03521,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "COLLECTUSDT",
+   "base": "COLLECT",
+   "quote": "USDT",
+   "precio": 0.02134,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "SPORTFUNUSDT",
+   "base": "SPORTFUN",
+   "quote": "USDT",
+   "precio": 0.02053,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "BASEDUSDT",
+   "base": "BASED",
+   "quote": "USDT",
+   "precio": 0.06747,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AIGENSYNUSDT",
+   "base": "AIGENSYN",
+   "quote": "USDT",
+   "precio": 0.02054,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "STARUSDT",
+   "base": "STAR",
+   "quote": "USDT",
+   "precio": 0.03498,
+   "hora": "2026-10-11T18:44:26.881Z",
+   "intervalo": "1d"
+  }
+ ]
+}
