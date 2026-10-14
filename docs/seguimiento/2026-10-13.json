@@ -1,0 +1,131 @@
+{
+ "fecha": "2026-10-13",
+ "monedas": [
+  {
+   "mercado": "spot",
+   "simbolo": "DODOUSDT",
+   "base": "DODO",
+   "quote": "USDT",
+   "precio": 0.02037,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "GNSUSDT",
+   "base": "GNS",
+   "quote": "USDT",
+   "precio": 0.53,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "WLFIUSDT",
+   "base": "WLFI",
+   "quote": "USDT",
+   "precio": 0.057,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "币安人生USDT",
+   "base": "币安人生",
+   "quote": "USDT",
+   "precio": 0.484,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ICNTUSDT",
+   "base": "ICNT",
+   "quote": "USDT",
+   "precio": 0.1082,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AINUSDT",
+   "base": "AIN",
+   "quote": "USDT",
+   "precio": 0.0405,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "VELVETUSDT",
+   "base": "VELVET",
+   "quote": "USDT",
+   "precio": 0.07482,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "WLFIUSDT",
+   "base": "WLFI",
+   "quote": "USDT",
+   "precio": 0.057,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "币安人生USDT",
+   "base": "币安人生",
+   "quote": "USDT",
+   "precio": 0.4836,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ONUSDT",
+   "base": "ON",
+   "quote": "USDT",
+   "precio": 0.1341,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "UAIUSDT",
+   "base": "UAI",
+   "quote": "USDT",
+   "precio": 0.3262,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "JCTUSDT",
+   "base": "JCT",
+   "quote": "USDT",
+   "precio": 0.002053,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "COLLECTUSDT",
+   "base": "COLLECT",
+   "quote": "USDT",
+   "precio": 0.02123,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "SPORTFUNUSDT",
+   "base": "SPORTFUN",
+   "quote": "USDT",
+   "precio": 0.02015,
+   "hora": "2026-10-14T20:03:43.644Z",
+   "intervalo": "1d"
+  }
+ ]
+}
