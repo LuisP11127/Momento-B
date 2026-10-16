@@ -15,6 +15,10 @@
   "futures:INUSDT": {
    "activa": true,
    "hora": "2026-10-07T15:24:44.605Z"
+  },
+  "spot:GNSUSDT": {
+   "activa": false,
+   "hora": "2026-10-16T20:55:52.829Z"
   }
  }
 }
