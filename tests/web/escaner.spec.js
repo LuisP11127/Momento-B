@@ -50,6 +50,13 @@ test('cada cambio de temporalidad vuelve a pedir las velas y el visor también',
   await expect(page.locator('#viewer')).toBeVisible();
   await expect(page.locator('#big canvas').first()).toBeVisible();
   await expect(page.locator('#v-stats')).not.toContainText('null');  // sin filtro de acumulación esa línea no aparece
+  // Variación de cada vela, de la apertura al cierre: sin el ratón encima, la de la última (de 70 a 72)…
+  await page.mouse.move(5, 5);
+  await expect(page.locator('#v-legend')).toContainText('Var. +2.86%');
+  // …y al pasar el ratón, la de esa vela (más a la izquierda las velas bajan).
+  const box = await page.locator('#big').boundingBox();
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4);
+  await expect(page.locator('#v-legend')).toContainText(/Var\. -\d/);
   const n15 = fake.count('spot:AAAUSDT:15m');
   await page.locator('#v-tf button', { hasText: '15m' }).click();
   await expect.poll(() => fake.count('spot:AAAUSDT:15m')).toBe(n15 + 1);

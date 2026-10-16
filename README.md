@@ -202,7 +202,9 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
     futuros); al alejar o desplazarse hasta el borde izquierdo descarga las anteriores,
     y «ver todo el historial» las descarga hasta el inicio de la moneda (como mucho 40
     páginas). Las tarjetas usan las velas del escaneo, porque solo muestran las últimas;
-  - al pasar el ratón se ven apertura, máximo, mínimo, cierre y el valor de cada media en esa vela;
+  - al pasar el ratón (o el dedo) se ven apertura, máximo, mínimo, cierre, la **variación de la
+    vela** (de la apertura al cierre, en verde o rojo) y el valor de cada media en esa vela; sin
+    el ratón encima, los de la última vela;
   - selector de temporalidad propio, que también descarga velas nuevas al cambiar (un punto
     marca dónde también se cumple la condición);
   - `←` / `→` pasan a la moneda anterior o siguiente y `Esc` cierra;
