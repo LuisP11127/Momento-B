@@ -73,6 +73,8 @@ class Fake {
     this.futuresBlocked = !!opts.futuresBlocked;
     this.custom = opts.custom || {};   // "mercado:SÍMBOLO:intervalo" -> velas
     this.paths = opts.paths || {};     // "mercado:SÍMBOLO" -> { base, spikes } (consultas con startTime)
+    this.history = opts.history || {}; // "mercado:SÍMBOLO:intervalo" -> velas que tiene la moneda (historial con endTime)
+    this.full = {};
     this.hook = null;                  // (petición de velas) -> undefined | 'hang' | 'reset' | { status, headers }
     this.requests = [];                // peticiones de velas
     this.gh = { files: {}, log: [], fail: false };
@@ -154,6 +156,11 @@ class Fake {
 
     const pathDef = this.paths[mk + ':' + symbol];
     if (pathDef && info.startTime != null) return this.json(route, pathCandles(pathDef, tf, info.startTime, info.endTime, limit));
+    const total = this.history[info.key];
+    if (total) {  // como Binance: las últimas «limit» velas que abren antes de endTime
+      const full = this.full[info.key] || (this.full[info.key] = candles(closesOf('rebound', total), tf));
+      return this.json(route, (info.endTime != null ? full.filter((r) => r[0] <= info.endTime) : full).slice(-limit));
+    }
     const custom = this.custom[info.key];
     if (custom) return this.json(route, custom.slice(-limit));
     const shape = tf === this.scanTf ? (symbols[symbol] || 'up') : 'rebound';

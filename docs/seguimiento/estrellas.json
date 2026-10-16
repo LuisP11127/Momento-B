@@ -1,24 +1,20 @@
 {
  "estrellas": {
-  "futures:AIOUSDT": {
-   "activa": true,
-   "hora": "2026-10-12T16:51:47.669Z"
-  },
-  "futures:COLLECTUSDT": {
-   "activa": true,
-   "hora": "2026-10-12T16:55:00.487Z"
-  },
-  "futures:ICNTUSDT": {
+  "2026-10-06|futures:ICNTUSDT": {
    "activa": true,
    "hora": "2026-10-07T15:27:24.593Z"
   },
-  "futures:INUSDT": {
+  "2026-10-06|futures:INUSDT": {
    "activa": true,
    "hora": "2026-10-07T15:24:44.605Z"
   },
-  "spot:GNSUSDT": {
-   "activa": false,
-   "hora": "2026-10-16T20:55:52.829Z"
+  "2026-10-11|futures:AIOUSDT": {
+   "activa": true,
+   "hora": "2026-10-12T16:51:47.669Z"
+  },
+  "2026-10-11|futures:COLLECTUSDT": {
+   "activa": true,
+   "hora": "2026-10-12T16:55:00.487Z"
   }
  }
 }

@@ -78,10 +78,12 @@ En la pestaña **Seguimiento** de la web:
   las primeras 24 horas es «1 día»), y la fecha en que llegó. Esa fila se pinta de
   verde y se queda así aunque luego baje. El momento se busca con velas de 1 o 5
   minutos;
-- **estrellas**: la estrella de cada moneda (en las tarjetas del escáner, en el
-  gráfico ampliado o en la tabla del seguimiento) la deja fijada, y en el
-  seguimiento aparece primero en cada día donde esté. Cuenta el mercado: la de spot
-  y la de futuros se marcan por separado;
+- **estrellas**: la estrella deja fijada una moneda **en un día** del seguimiento:
+  ese día aparece primero y los demás días donde esté la moneda no cambian. En la
+  tabla del seguimiento va al día de esa tabla; en las tarjetas del escáner y en su
+  gráfico ampliado, al día del escaneo. Cuenta el mercado: la de spot y la de futuros
+  se marcan por separado. Las estrellas de antes (que no tenían día) pasan solas al
+  día en que se pusieron;
 - filtros **Todos / Spot / Futuros / No repetidas** y orden por subida, bajada,
   moneda u orden del escaneo (las monedas con estrella van siempre primero);
 - al pulsar una moneda se abre su gráfico (1D por defecto) con una línea en el
@@ -196,6 +198,10 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
 - Al pulsar una tarjeta, o el botón de ampliar, el gráfico se abre a pantalla completa:
   - rueda del ratón o pellizco para acercar y alejar, y arrastrar para moverse en el tiempo;
   - botones `−` / `+` y «ver todo el historial» (teclas `-`, `+` y `0`);
+  - carga el máximo de velas que da Binance en una petición (1000 en spot y 1500 en
+    futuros); al alejar o desplazarse hasta el borde izquierdo descarga las anteriores,
+    y «ver todo el historial» las descarga hasta el inicio de la moneda (como mucho 40
+    páginas). Las tarjetas usan las velas del escaneo, porque solo muestran las últimas;
   - al pasar el ratón se ven apertura, máximo, mínimo, cierre y el valor de cada media en esa vela;
   - selector de temporalidad propio, que también descarga velas nuevas al cambiar (un punto
     marca dónde también se cumple la condición);
