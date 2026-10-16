@@ -25,7 +25,8 @@ from .scanner import is_tokenized_stock
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 COIN_FIELDS = ("mercado", "simbolo", "base", "quote", "precio", "hora", "intervalo")
 STARS_FILE = "estrellas.json"  # monedas con estrella, en la misma carpeta que los días de seguimiento
-STAR_KEY_RE = re.compile(r"^[a-z]+:\S+$")
+# «AAAA-MM-DD|mercado:SÍMBOLO» (la estrella de un día); sin día es el formato antiguo, que la web convierte.
+STAR_KEY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2}\|)?[a-z]+:\S+$")
 ICON_PATH = Path(__file__).with_name("icono.png")
 
 
@@ -62,7 +63,7 @@ def collect_tracking(folder: Path) -> list[dict]:
 
 
 def collect_stars(folder: Path) -> dict:
-    """Estrellas que la web guarda en estrellas.json: {"spot:BTCUSDT": {"activa": true, "hora": "..."}}.
+    """Estrellas que la web guarda en estrellas.json: {"2026-10-15|spot:BTCUSDT": {"activa": true, "hora": "..."}}.
 
     Se publican también las quitadas (activa false): con su hora, la web sabe qué cambio es el más reciente.
     """

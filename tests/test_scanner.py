@@ -568,12 +568,17 @@ def test_collect_stars_keeps_valid_entries(tmp_path, capsys):
 
     assert web.collect_stars(tmp_path) == {}  # sin archivo
     (tmp_path / "estrellas.json").write_text(json.dumps({"estrellas": {
-        "spot:BTCUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"},
+        "2026-10-15|spot:GNSUSDT": {"activa": True, "hora": "2026-10-16T15:00:00.000Z"},
+        "2026-10-13|spot:GNSUSDT": {"activa": False, "hora": "2026-10-16T15:01:00.000Z"},
+        "spot:BTCUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"},  # formato antiguo: la web lo convierte
         "futures:ETHUSDT": {"activa": False, "hora": "2026-10-06T16:00:00.000Z", "otro": 1},
         "sin-mercado": {"activa": True, "hora": "x"},
+        "2026-10-15|sin-mercado": {"activa": True, "hora": "x"},
         "spot:XUSDT": {"activa": "sí"},
     }}), encoding="utf-8")
     assert web.collect_stars(tmp_path) == {
+        "2026-10-13|spot:GNSUSDT": {"activa": False, "hora": "2026-10-16T15:01:00.000Z"},
+        "2026-10-15|spot:GNSUSDT": {"activa": True, "hora": "2026-10-16T15:00:00.000Z"},
         "futures:ETHUSDT": {"activa": False, "hora": "2026-10-06T16:00:00.000Z"},
         "spot:BTCUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"},
     }
@@ -591,12 +596,12 @@ def test_web_cli_writes_tracking_aggregate(tmp_path):
         {"mercado": "futures", "simbolo": "BBBUSDT", "base": "BBB", "quote": "USDT", "precio": 2, "hora": "x", "intervalo": "1d"}]}),
         encoding="utf-8")
     (folder / "estrellas.json").write_text(json.dumps({"estrellas": {
-        "futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}}), encoding="utf-8")
+        "2026-10-02|futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}}), encoding="utf-8")
     out = tmp_path / "site"
     assert web.main([str(out), "--seguimiento", str(folder)]) == 0
     data = json.loads((out / "seguimiento.json").read_text(encoding="utf-8"))
     assert [d["fecha"] for d in data["dias"]] == ["2026-10-02"]
-    assert data["estrellas"] == {"futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}
+    assert data["estrellas"] == {"2026-10-02|futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}
     assert (out / "index.html").exists()
     assert (out / "icono.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     # Sin --seguimiento no se escribe (docs/ no debe llevar una copia que se quede vieja)

@@ -1,6 +1,6 @@
 // Seguimiento: días según la vela de Binance, columnas, «Rumbo al 50», GitHub y estrellas.
 const { test, expect } = require('@playwright/test');
-const { Fake, URL, scan, sleep } = require('./fake');
+const { Fake, URL, scan, sleep, candles } = require('./fake');
 
 const HOUR = 3600000;
 const coin = (simbolo, precio, hora, mercado = 'spot') => ({ mercado, simbolo, base: simbolo.replace(/USDT$/, ''), quote: 'USDT', precio, hora, intervalo: '4h' });
@@ -52,6 +52,8 @@ function rumboFake() {
     remote: { dias: [{ fecha: '2026-10-05', monedas: [coin('HITUSDT', 10, new Date(start).toISOString()), coin('NOUSDT', 10, new Date(start).toISOString())] }] },
     prices: { spot: { HITUSDT: 10, NOUSDT: 11 }, futures: {} },
     paths: { 'spot:HITUSDT': { base: 10, spikes: [{ at: hit, high: 16 }] }, 'spot:NOUSDT': { base: 11, spikes: [{ at: start + 5 * HOUR, high: 12 }] } },
+    // Velas del gráfico con el mismo precio que la moneda (el visor toma de ahí el precio actual).
+    custom: { 'spot:HITUSDT:1d': candles(Array(300).fill(10), '1d'), 'spot:NOUSDT:1d': candles(Array(300).fill(11), '1d') },
   });
   return { fake, start, hit };
 }
@@ -78,6 +80,10 @@ test('columnas del seguimiento y «Rumbo al 50» con su fecha, en verde', async 
 
   await hitRow.click();
   await expect(page.locator('#v-stats')).toContainText('Llegó a +50 % el ' + date + ' (2 días)');
+  await page.keyboard.press('Escape');
+  await noRow.click();
+  await expect(page.locator('#v-stats')).toContainText('Precio entonces');
+  await expect(page.locator('#v-stats')).not.toContainText('null');  // la que no llegó: sin esa línea
   await page.keyboard.press('Escape');
 
   await page.setViewportSize({ width: 390, height: 800 });
@@ -135,7 +141,8 @@ test('GitHub: sube el día, no repite subidas sin cambios y borra', async ({ pag
   expect(fake.gh.files[files[0]]).toBeUndefined();
 });
 
-test('estrellas: primero en cada día y guardadas en GitHub', async ({ page, context }) => {
+test('estrellas: primero en su día y guardadas en GitHub', async ({ page, context }) => {
+  const today = new Date().toISOString().slice(0, 10);  // en UTC, el día de la vela de hoy
   const fake = new Fake();
   await fake.install(context);
   await page.goto(URL);
@@ -150,15 +157,15 @@ test('estrellas: primero en cada día y guardadas en GitHub', async ({ page, con
   await page.locator('#gh-form button[type="submit"]').click();
   await expect(page.locator('#track-sync')).toContainText('Subido');
   const stars = () => JSON.parse(fake.gh.files['docs/seguimiento/estrellas.json'].text).estrellas;
-  expect(stars()['spot:AAAUSDT'].activa).toBe(true);
+  expect(stars()[today + '|spot:AAAUSDT'].activa).toBe(true);
 
   // Desde la tabla: la fila sube con las de estrella y el foco se queda en su estrella.
   const futRow = page.locator('.day tbody tr').filter({ hasText: 'AAA' }).filter({ hasText: 'Futuros' });
   await futRow.locator('.star').click();
   await expect.poll(() => rowTexts(page)).toEqual([expect.stringMatching(/★AAA\/USDT Futuros, ★AAA\/USDT Spot, ☆TSLAB\/USDT Futuros$/)]);
-  expect(await page.evaluate(() => document.activeElement.dataset.star)).toBe('futures:AAAUSDT');
+  expect(await page.evaluate(() => document.activeElement.dataset.star)).toBe(today + '|futures:AAAUSDT');
   await expect(page.locator('#viewer')).toBeHidden();
-  await expect.poll(() => (stars()['futures:AAAUSDT'] || {}).activa, { timeout: 15000 }).toBe(true);  // se sube a los pocos segundos
+  await expect.poll(() => (stars()[today + '|futures:AAAUSDT'] || {}).activa, { timeout: 15000 }).toBe(true);  // se sube a los pocos segundos
 
   // Si GitHub falla queda pendiente, con su botón.
   fake.gh.fail = true;
@@ -167,11 +174,66 @@ test('estrellas: primero en cada día y guardadas en GitHub', async ({ page, con
   fake.gh.fail = false;
   await page.locator('#track-sync button', { hasText: 'Subir las estrellas' }).click();
   await expect(page.locator('#track-sync')).toContainText('Subido');
-  expect(stars()['futures:AAAUSDT'].activa).toBe(false);
+  expect(stars()[today + '|futures:AAAUSDT'].activa).toBe(false);
 
   fake.gh.log.length = 0;
   await page.reload();
   await expect.poll(() => rowTexts(page)).toEqual([expect.stringMatching(/★AAA\/USDT Spot, ☆AAA\/USDT Futuros, ☆TSLAB\/USDT Futuros$/)]);
   await sleep(1000);
   expect(fake.gh.log).toEqual([]);  // nada pendiente: no se llama a GitHub
+});
+
+// Dos días con las mismas monedas: el 13 y el 15 de octubre.
+function twoDays(extra = {}) {
+  const day = (fecha, hora) => ({ fecha, monedas: [coin('AAAUSDT', 1, hora), coin('GNSUSDT', 2, hora)] });
+  return new Fake(Object.assign({
+    remote: { dias: [day('2026-10-15', '2026-10-15T15:00:00.000Z'), day('2026-10-13', '2026-10-13T15:00:00.000Z')] },
+    prices: { spot: { AAAUSDT: 1, GNSUSDT: 2 }, futures: {} },
+  }, extra));
+}
+async function openBothDays(page) {
+  await page.goto(URL + '#seguimiento');
+  await page.selectOption('#track-sort', 'moneda');
+  await page.locator('.day[data-fecha="2026-10-13"] .day-toggle').click();  // por defecto solo está abierto el más reciente
+  await expect(page.locator('.day[data-fecha="2026-10-13"] tbody tr')).toHaveCount(2);
+}
+
+test('una estrella queda solo en el día donde se pone', async ({ page, context }) => {
+  await twoDays().install(context);
+  await openBothDays(page);
+  expect(await rowTexts(page)).toEqual(['Seguimiento 15 de octubre: ☆AAA/USDT Spot, ☆GNS/USDT Spot', 'Seguimiento 13 de octubre: ☆AAA/USDT Spot, ☆GNS/USDT Spot']);
+  await page.locator('.day[data-fecha="2026-10-15"] tbody tr', { hasText: 'GNS' }).locator('.star').click();
+  // El 15 la moneda sube con su estrella; el 13 sigue igual.
+  expect(await rowTexts(page)).toEqual(['Seguimiento 15 de octubre: ★GNS/USDT Spot, ☆AAA/USDT Spot', 'Seguimiento 13 de octubre: ☆AAA/USDT Spot, ☆GNS/USDT Spot']);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('momento-b:estrellas')));
+  expect(Object.keys(saved)).toEqual(['2026-10-15|spot:GNSUSDT']);
+  await expect(page.locator('.day[data-fecha="2026-10-15"] tbody tr', { hasText: 'GNS' }).locator('.star')).toHaveAttribute('title', /Seguimiento 15 de octubre/);
+  await page.reload();
+  await page.locator('.day[data-fecha="2026-10-13"] .day-toggle').waitFor();
+  expect((await rowTexts(page))[0]).toBe('Seguimiento 15 de octubre: ★GNS/USDT Spot, ☆AAA/USDT Spot');
+});
+
+test('las estrellas de antes (sin día) pasan al día en que se pusieron', async ({ page, context }) => {
+  // GNS se marcó el 15; AAA el 14, que no tiene seguimiento: pasa al último día anterior donde estaba, el 13.
+  const fake = twoDays({ remote: Object.assign(twoDays().remote, { estrellas: { 'spot:GNSUSDT': { activa: true, hora: '2026-10-15T18:00:00.000Z' } } }) });
+  fake.gh.files['docs/seguimiento/estrellas.json'] = { sha: 'viejo', text: JSON.stringify({ estrellas: { 'spot:GNSUSDT': { activa: true, hora: '2026-10-15T18:00:00.000Z' } } }) };
+  await fake.install(context);
+  await context.addInitScript(() => {
+    if (sessionStorage.getItem('pre')) return;
+    sessionStorage.setItem('pre', '1');
+    localStorage.setItem('momento-b:estrellas', JSON.stringify({ 'spot:AAAUSDT': { activa: true, hora: '2026-10-14T12:00:00.000Z' },
+      'spot:XXXUSDT': { activa: false, hora: '2026-10-14T12:00:00.000Z' } }));
+  });
+  await openBothDays(page);
+  expect(await rowTexts(page)).toEqual(['Seguimiento 15 de octubre: ★GNS/USDT Spot, ☆AAA/USDT Spot', 'Seguimiento 13 de octubre: ★AAA/USDT Spot, ☆GNS/USDT Spot']);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('momento-b:estrellas')));
+  expect(Object.keys(saved)).toEqual(['2026-10-13|spot:AAAUSDT']);  // las quitadas de antes ya no se guardan
+  expect(await page.evaluate(() => localStorage.getItem('momento-b:estrellas-pendiente'))).toBe('1');
+
+  // Al conectar GitHub el archivo pasa al formato por día.
+  await page.locator('#track-sync button', { hasText: 'GitHub' }).click();
+  await page.fill('#gh-token', 'test-token');
+  await page.locator('#gh-form button[type="submit"]').click();
+  await expect(page.locator('#track-sync')).toContainText('Subido');
+  expect(Object.keys(JSON.parse(fake.gh.files['docs/seguimiento/estrellas.json'].text).estrellas)).toEqual(['2026-10-13|spot:AAAUSDT', '2026-10-15|spot:GNSUSDT']);
 });

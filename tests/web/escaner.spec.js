@@ -49,6 +49,14 @@ test('cada cambio de temporalidad vuelve a pedir las velas y el visor también',
   await page.locator('#grid .card').first().click();
   await expect(page.locator('#viewer')).toBeVisible();
   await expect(page.locator('#big canvas').first()).toBeVisible();
+  await expect(page.locator('#v-stats')).not.toContainText('null');  // sin filtro de acumulación esa línea no aparece
+  // Variación de cada vela, de la apertura al cierre: sin el ratón encima, la de la última (de 70 a 72)…
+  await page.mouse.move(5, 5);
+  await expect(page.locator('#v-legend')).toContainText('Var. +2.86%');
+  // …y al pasar el ratón, la de esa vela (más a la izquierda las velas bajan).
+  const box = await page.locator('#big').boundingBox();
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4);
+  await expect(page.locator('#v-legend')).toContainText(/Var\. -\d/);
   const n15 = fake.count('spot:AAAUSDT:15m');
   await page.locator('#v-tf button', { hasText: '15m' }).click();
   await expect.poll(() => fake.count('spot:AAAUSDT:15m')).toBe(n15 + 1);
@@ -56,8 +64,9 @@ test('cada cambio de temporalidad vuelve a pedir las velas y el visor también',
   await expect(page.locator('#viewer')).toBeHidden();
 });
 
-test('estrellas en las tarjetas y en el visor', async ({ page, context }) => {
-  const fake = new Fake({ remote: { dias: [], estrellas: { 'futures:TSLABUSDT': { activa: true, hora: '2026-10-05T10:00:00.000Z' } } } });
+test('estrellas en las tarjetas y en el visor, en el día del escaneo', async ({ page, context }) => {
+  const today = new Date().toISOString().slice(0, 10);  // las pruebas corren en UTC: el día de la vela es el de hoy
+  const fake = new Fake({ remote: { dias: [], estrellas: { [today + '|futures:TSLABUSDT']: { activa: true, hora: new Date().toISOString() } } } });
   await fake.install(context);
   await page.goto(URL);
   await scan(page);
@@ -85,10 +94,36 @@ test('estrellas en las tarjetas y en el visor', async ({ page, context }) => {
   await expect(star('TSLAB', 'Futuros')).toHaveAttribute('aria-pressed', 'false');
 
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('momento-b:estrellas')));
-  expect(saved['spot:AAAUSDT'].activa).toBe(true);
-  expect(saved['futures:AAAUSDT'].activa).toBe(false);
-  expect(saved['futures:TSLABUSDT'].activa).toBe(false);
+  expect(saved[today + '|spot:AAAUSDT'].activa).toBe(true);
+  expect(saved[today + '|futures:AAAUSDT'].activa).toBe(false);
+  expect(saved[today + '|futures:TSLABUSDT'].activa).toBe(false);
   await page.reload();
   await scan(page);
   await expect(star('AAA', 'Spot')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('el gráfico ampliado carga el máximo de velas y, hacia atrás, todo el historial', async ({ page, context }) => {
+  const fake = new Fake({ history: { 'spot:AAAUSDT:1d': 2600, 'futures:TSLABUSDT:1d': 3200 } });
+  await fake.install(context);
+  await page.goto(URL);
+  await scan(page);
+  const reqs = (key) => fake.requests.filter((r) => r.key === key);
+  expect(reqs('spot:AAAUSDT:1d').map((r) => r.limit)).toEqual([299]);  // las tarjetas, con las del escaneo
+
+  await page.locator('#grid .card').filter({ hasText: 'AAA' }).filter({ hasText: 'Spot' }).click();
+  await expect(page.locator('#v-hist')).toContainText('1000 velas');  // spot: 1000 por petición
+  expect(reqs('spot:AAAUSDT:1d').map((r) => r.limit)).toEqual([299, 1000]);
+  await page.locator('#v-fit').click();  // «Ver todo el historial»
+  await expect(page.locator('#v-hist')).toContainText('Todo el historial: 2600 velas');
+  expect(reqs('spot:AAAUSDT:1d').filter((r) => r.endTime != null).length).toBe(2);  // 1000 + 600 anteriores
+  await page.keyboard.press('Escape');
+
+  await page.locator('#grid .card').filter({ hasText: 'TSLAB' }).click();
+  await expect(page.locator('#v-hist')).toContainText('1500 velas');  // futuros: 1500 por petición
+  for (let i = 0; i < 14 && !reqs('futures:TSLABUSDT:1d').some((r) => r.endTime != null); i++) {
+    await page.keyboard.press('-');  // alejar hasta el borde izquierdo carga las anteriores
+    await page.waitForTimeout(150);
+  }
+  await expect(page.locator('#v-hist')).toContainText('3000 velas');
+  await expect(page.locator('#big canvas').first()).toBeVisible();
 });

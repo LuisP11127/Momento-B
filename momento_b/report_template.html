@@ -235,6 +235,8 @@ body.tracking .scan-only { display: none !important; }
 .viewer-title .star { align-self: center; }
 .viewer-title .price { font-size: 19px; }
 .viewer-stats { display: flex; flex-wrap: wrap; gap: 2px 18px; font-size: 13.5px; color: var(--muted); }
+.v-hist { font: 400 12.5px/1.3 var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.candle-pct .up, .candle-pct .down { font-weight: 500; }
 .viewer-stats b { font: 500 13.5px var(--font-mono); color: var(--fg); }
 .controls { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .controls .sep { width: 1px; height: 22px; background: var(--line); margin-inline: 2px; }
@@ -401,6 +403,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     </div>
     <div class="viewer-stats" id="v-stats"></div>
     <div class="seg tf" id="v-tf" role="group" aria-label="Temporalidad del gráfico"></div>
+    <span class="v-hist" id="v-hist" aria-live="polite"></span>
     <div class="controls">
       <button class="icon-btn" id="v-prev" type="button" title="Moneda anterior (←)" aria-label="Moneda anterior">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
@@ -411,7 +414,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
       <button class="icon-btn" id="v-in" type="button" title="Acercar (+)" aria-label="Acercar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-      <button class="icon-btn" id="v-fit" type="button" title="Ver todo el historial (0)" aria-label="Ver todo el historial">
+      <button class="icon-btn" id="v-fit" type="button" title="Cargar y ver todo el historial (0)" aria-label="Cargar y ver todo el historial">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
       <a class="icon-btn" id="v-link" target="_blank" rel="noopener" title="Abrir en Binance" aria-label="Abrir en Binance">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v5H5V7h5"/></svg></a>
@@ -791,7 +794,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       h("div", { class: "card-head" },
         h("span", { class: "sym" }, it.base || it.simbolo, h("small", { text: it.quote ? "/" + it.quote : "" })),
         h("span", { class: "badge", text: MARKET_NAMES[it.mercado] || it.mercado }),
-        starButton(it),
+        starButton(it, scanDay()),
         expand),
       h("div", { class: "figures" },
         h("span", { class: "price", text: fmtPrice(it.precio) }),
@@ -811,18 +814,20 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   }
   const ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>';
   function paintStar(b) {
-    const on = !!(starMap()[b.dataset.star] || {}).activa;
+    const on = !!(starMap()[b.dataset.star] || {}).activa, day = "«Seguimiento " + dayTitle(b.dataset.fecha) + "»";
     b.setAttribute("aria-pressed", String(on));
-    b.setAttribute("aria-label", (on ? "Quitar la estrella de " : "Poner una estrella a ") + b.dataset.name);
-    b.title = on ? "Quitar la estrella" : "Poner una estrella: la moneda queda fijada y aparece primero en el seguimiento";
+    b.setAttribute("aria-label", (on ? "Quitar la estrella de " : "Poner una estrella a ") + b.dataset.name + " en " + day);
+    b.title = on ? "Quitar la estrella de " + day : "Poner una estrella: la moneda queda fijada y aparece primero en " + day;
   }
-  function starButton(c) {
+  // Estrella de una moneda en un día del seguimiento.
+  function starButton(c, fecha) {
     const b = h("button", { class: "star", type: "button" });
     b.innerHTML = ICON_STAR;
-    b.dataset.star = coinKey(c);
+    b.dataset.star = starKey(fecha, c);
+    b.dataset.fecha = fecha;
     b.dataset.name = (c.base || c.simbolo) + (c.quote ? "/" + c.quote : "") + " (" + (MARKET_NAMES[c.mercado] || c.mercado) + ")";
     paintStar(b);
-    b.addEventListener("click", (e) => { e.stopPropagation(); toggleStar(c, b); });
+    b.addEventListener("click", (e) => { e.stopPropagation(); toggleStar(fecha, c, b); });
     b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") e.stopPropagation(); });  // no abre el gráfico
     return b;
   }
@@ -906,49 +911,55 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const priceFormat = { type: "price", precision: d, minMove: Math.pow(10, -d) };
     // Franja de fondo sobre las velas de la acumulación (antes que las velas, para quedar detrás).
     let band = null;
-    const acc = state.filters.acum && it._acc && it._acc.days ? it._acc : null;
-    if (acc) {
-      const rows = rowsFor(it, tf), span = tfMs(tf);
-      const times = rows.flatMap((k, i) => (k[0] < acc.to + DAY_MS && k[0] + span > acc.from ? [sd.candles[i].time] : []));
-      if (times.length) {
-        // Área en una escala propia de 0 a 1: rellena de arriba abajo, solo entre la primera y la última vela.
-        band = chart.addAreaSeries({ priceScaleId: "band", lineWidth: 1, lastValueVisible: false, priceLineVisible: false,
-          crosshairMarkerVisible: false, autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } }) });
-        chart.priceScale("band").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
-        band.times = times;
-      }
+    if (bandTimes(it, tf).length) {
+      // Área en una escala propia de 0 a 1: rellena de arriba abajo, solo entre la primera y la última vela.
+      band = chart.addAreaSeries({ priceScaleId: "band", lineWidth: 1, lastValueVisible: false, priceLineVisible: false,
+        crosshairMarkerVisible: false, autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } }) });
+      chart.priceScale("band").applyOptions({ scaleMargins: { top: 0, bottom: 0 }, visible: false });
     }
     const candles = chart.addCandlestickSeries({ priceFormat });
-    candles.setData(sd.candles);
-    const mas = sd.mas.map((data) => {
-      const s = chart.addLineSeries({ lineWidth: isBig ? 2 : 1, priceLineVisible: false, lastValueVisible: isBig, crosshairMarkerVisible: false, priceFormat });
-      s.setData(data);
-      return s;
-    });
+    const mas = sd.mas.map(() => chart.addLineSeries({ lineWidth: isBig ? 2 : 1, priceLineVisible: false, lastValueVisible: isBig, crosshairMarkerVisible: false, priceFormat }));
     let volume = null;
     if (isBig) {
       volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol", lastValueVisible: false, priceLineVisible: false });
       chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
     const entry = { chart, candles, mas, volume, band, item: it, isBig, tf };
-    if (isBig && it._seguimiento) markTracking(entry, sd, rowsFor(it, tf), t);
-    applyColors(entry, t);
+    if (isBig && it._seguimiento) markTracking(entry, t);
+    fillSeries(entry);
     const n = sd.candles.length;
     const visible = isBig ? 150 : SIZES[state.size];
     chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - visible), to: n - 1 + (isBig ? 6 : 2) });
     return entry;
   }
-  // En el gráfico de una moneda en seguimiento: línea con el precio de entrada y marca en la vela de ese día.
-  function markTracking(entry, sd, rows, t) {
-    const sg = entry.item._seguimiento;
+  // Velas de la acumulación (filtro activo) en esa temporalidad, para la franja de fondo.
+  function bandTimes(it, tf) {
+    const acc = state.filters.acum && it._acc && it._acc.days ? it._acc : null;
+    const sd = acc && seriesData(it, tf), rows = rowsFor(it, tf), span = tfMs(tf);
+    if (!sd) return [];
+    return rows.flatMap((k, i) => (k[0] < acc.to + DAY_MS && k[0] + span > acc.from ? [sd.candles[i].time] : []));
+  }
+  // Pone (o vuelve a poner, tras cargar más historial) las velas, medias, volumen, franja y marca de un gráfico.
+  function fillSeries(entry) {
+    const it = entry.item, tf = entry.tf, sd = seriesData(it, tf);
+    entry.candles.setData(sd.candles);
+    entry.mas.forEach((s, i) => s.setData(sd.mas[i]));
+    if (entry.band) entry.band.times = bandTimes(it, tf);
+    if (entry.entryLine) {  // flecha en la vela del día del seguimiento
+      const sg = it._seguimiento, rows = rowsFor(it, tf), ms = Date.parse(sg.hora);
+      let idx = -1;
+      for (let i = 0; i < rows.length && rows[i][0] <= ms; i++) idx = i;
+      entry.marker = idx >= 0 ? { time: sd.candles[idx].time, position: "belowBar", shape: "arrowUp", text: shortDate(sg.fecha) } : null;
+      if (!entry.marker) entry.candles.setMarkers([]);
+    }
+    applyColors(entry, tokens());
+  }
+  // En el gráfico de una moneda en seguimiento: línea con el precio de entrada (la flecha la pone fillSeries).
+  function markTracking(entry, t) {
     entry.entryLine = entry.candles.createPriceLine({
-      price: sg.precio, color: t.accent, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
+      price: entry.item._seguimiento.precio, color: t.accent, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed,
       axisLabelVisible: true, title: "Seguimiento",
     });
-    const ms = Date.parse(sg.hora);
-    let idx = -1;
-    for (let i = 0; i < rows.length && rows[i][0] <= ms; i++) idx = i;
-    if (idx >= 0) entry.marker = { time: sd.candles[idx].time, position: "belowBar", shape: "arrowUp", text: shortDate(sg.fecha) };
   }
   function createMini(el) {
     const it = state.view[Number(el.dataset.index)];
@@ -996,6 +1007,12 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       for (const [k, v] of [["A", c.open], ["M", c.high], ["m", c.low], ["C", c.close]]) {
         ohlc.append(h("b", { text: k + " " }), fmtPrice(v), "  ");
       }
+      // Variación de la vela, de la apertura al cierre (como en el filtro de acumulación).
+      const pct = c.open ? (c.close - c.open) / c.open * 100 : null;
+      if (pct != null) {
+        ohlc.append(h("span", { class: "candle-pct", title: "Variación de la vela, de la apertura al cierre" },
+          h("b", { text: "Var. " }), h("span", { class: pct > 0 ? "up" : pct < 0 ? "down" : "", text: fmtPct(pct) })));
+      }
       $("v-legend").prepend(ohlc);
     }
   }
@@ -1011,7 +1028,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     $("v-sym").textContent = "";
     $("v-sym").append(it.base || it.simbolo, h("small", { text: it.quote ? "/" + it.quote : "" }));
     $("v-badge").textContent = MARKET_NAMES[it.mercado] || it.mercado;
-    const star = starButton(it);
+    const star = starButton(it, it._seguimiento ? it._seguimiento.fecha : scanDay());
     star.id = "v-star";
     $("v-star").replaceWith(star);
     $("v-price").textContent = fmtPrice(it.precio);
@@ -1023,13 +1040,14 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (it._seguimiento) {
       trackStats(it, index);
     } else {
-      stats.append(
+      // (append escribiría «null» por las líneas que no aplican: se quitan antes)
+      stats.append(...[
         h("span", { class: "tf-tag", text: tfLabel(state.data.intervalo), title: "Datos del escaneo en " + tfLabel(state.data.intervalo) }),
         h("span", null, "Falta ", h("b", { text: fmtPct(it.dist_ma_lenta_pct) }), " a MA" + s),
         h("span", null, h("b", { text: bars(it) }), " velas MA" + f + ">MA" + m),
         h("span", null, "Vol 24h ", h("b", { text: fmtVol(it.volumen_24h) })),
         accRow(it, "span"),
-        h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
+        h("span", null, h("b", { text: (index + 1) + "/" + state.view.length }))].filter(Boolean));
     }
     const link = $("v-link");
     link.hidden = !!state.data.ejemplo;
@@ -1046,17 +1064,18 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const rb = rumboOf(sg.fecha, { mercado: it.mercado, simbolo: it.simbolo, precio: sg.precio, hora: sg.hora }, it.precio);
     const stats = $("v-stats");
     stats.textContent = "";
-    stats.append(
+    stats.append(...[
       h("span", { class: "tf-tag", text: "Seguimiento " + dayTitle(sg.fecha) }),
       h("span", null, "Precio entonces ", h("b", { text: fmtPrice(sg.precio) })),
       pct == null ? null : h("span", null, "Variación ", h("b", { class: pct >= 0 ? "up" : "down", text: fmtPct(pct) })),
       rb ? h("span", null, "Llegó a +50 % el ", h("b", { class: "up", text: hitDate(rb.at) }), " (" + daysText(rb.days) + ")") : null,
-      h("span", null, h("b", { text: (index + 1) + "/" + state.view.length })));
+      h("span", null, h("b", { text: (index + 1) + "/" + state.view.length }))].filter(Boolean));
   }
   function drawBig(it, index) {
     const tf = state.vtf, el = $("big");
     // Elegir una temporalidad en el visor siempre vuelve a pedir las velas.
     const pickTf = (next) => { state.vtf = next; if (it._fresh) delete it._fresh[next]; drawBig(it, index); };
+    const lastIndex = () => { const sd = seriesData(it, tf); return sd ? sd.candles.length - 1 : -1; };
     const render = () => {
       if ($("viewer").hidden || state.current !== index || state.vtf !== tf) return;
       closeBig();
@@ -1065,22 +1084,79 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       $("v-price").textContent = fmtPrice(it.precio);
       if (it._seguimiento) trackStats(it, index);
       big = buildChart(el, it, true, tf);
-      const sd = seriesData(it, tf);
-      const last = sd ? sd.candles.length - 1 : -1;
-      updateLegend(last);
+      updateLegend(lastIndex());
+      histStatus();
       if (big) {
         big.chart.subscribeCrosshairMove((p) => {
-          const idx = p && p.logical != null ? Math.round(p.logical) : last;
+          const last = lastIndex(), idx = p && p.logical != null ? Math.round(p.logical) : last;
           updateLegend(idx >= 0 && idx <= last ? idx : last);
         });
+        // Al llegar al borde izquierdo (desplazando o alejando) se cargan las velas anteriores.
+        big.chart.timeScale().subscribeVisibleLogicalRangeChange((r) => { if (r && r.from < 30) extendLeft(); });
       }
     };
     tfButtons($("v-tf"), tf, pickTf, it);
-    if (isFresh(it, tf)) { render(); return; }
+    if (isFresh(it, tf)) {
+      render();
+      if (!flag(it, "_deep", tf) && !flag(it, "_histEnd", tf)) {  // se ve ya con lo que hay y luego se amplía
+        const first = rowsFor(it, tf)[0][0];
+        loadCandles(it, tf, true).then(() => { if (big && big.item === it && big.tf === tf) refreshBig(first); });
+      }
+      return;
+    }
     closeBig();
     el.textContent = "";
     el.append(h("div", { class: "placeholder", text: "Cargando velas de " + tfLabel(tf) + "…" }));
-    loadCandles(it, tf).then(render);
+    loadCandles(it, tf, true).then(render);
+  }
+  // Tras añadir velas al gráfico ampliado: se vuelven a poner las series sin mover lo que se estaba viendo.
+  function refreshBig(prevFirst) {
+    if (!big) return;
+    const it = big.item, tf = big.tf, rows = rowsFor(it, tf);
+    if (!rows) return;
+    const ts = big.chart.timeScale(), r = ts.getVisibleLogicalRange();
+    fillSeries(big);
+    const added = prevFirst == null ? 0 : Math.max(0, rows.findIndex((k) => k[0] >= prevFirst));
+    if (r && added) ts.setVisibleLogicalRange({ from: r.from + added, to: r.to + added });
+    updateLegend(seriesData(it, tf).candles.length - 1);
+    histStatus();
+  }
+  let loadingOlder = false;
+  async function extendLeft() {
+    if (!big || loadingOlder) return;
+    const it = big.item, tf = big.tf, rows = rowsFor(it, tf);
+    if (!rows || flag(it, "_histEnd", tf)) return;
+    loadingOlder = true;
+    histStatus("Cargando velas anteriores…");
+    const added = await loadOlder(it, tf);
+    loadingOlder = false;
+    if (big && big.item === it && big.tf === tf) { if (added) refreshBig(rows[0][0]); else histStatus(); }
+  }
+  // «Ver todo el historial»: carga hacia atrás hasta el inicio de la moneda (como mucho 40 páginas) y lo muestra entero.
+  async function showAllHistory() {
+    if (!big) return;
+    const it = big.item, tf = big.tf;
+    const same = () => big && big.item === it && big.tf === tf;
+    for (let page = 0; page < 40 && same() && !flag(it, "_histEnd", tf); page++) {
+      if (loadingOlder) { await sleep(200); page--; continue; }
+      loadingOlder = true;
+      histStatus("Cargando historial… " + rowsFor(it, tf).length.toLocaleString("es-ES") + " velas");
+      const first = rowsFor(it, tf)[0][0], added = await loadOlder(it, tf);
+      loadingOlder = false;
+      if (!same()) return;
+      if (added) refreshBig(first);
+      if (!added) break;
+    }
+    if (same()) { big.chart.timeScale().fitContent(); histStatus(); }
+  }
+  function histStatus(text) {
+    const el = $("v-hist");
+    if (text != null || !big) { el.textContent = text || ""; return; }
+    const rows = rowsFor(big.item, big.tf) || [];
+    const n = rows.length.toLocaleString("es-ES") + (rows.length === 1 ? " vela" : " velas");
+    const from = rows.length ? new Date(rows[0][0]).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }) : "";
+    el.textContent = flag(big.item, "_histEnd", big.tf) ? "Todo el historial: " + n + ", desde el " + from
+      : n + " desde el " + from + " · aleja o desliza a la izquierda para ver más";
   }
   function closeBig() {
     if (big) { big.chart.remove(); big = null; }
@@ -1110,11 +1186,11 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   $("v-next").addEventListener("click", () => openViewer(state.current + 1));
   $("v-in").addEventListener("click", () => zoom(0.7));
   $("v-out").addEventListener("click", () => zoom(1.45));
-  $("v-fit").addEventListener("click", () => big && big.chart.timeScale().fitContent());
+  $("v-fit").addEventListener("click", showAllHistory);
   document.addEventListener("keydown", (e) => {
     if ($("viewer").hidden || e.altKey || e.ctrlKey || e.metaKey) return;
     const keys = { Escape: closeViewer, ArrowLeft: () => openViewer(state.current - 1), ArrowRight: () => openViewer(state.current + 1),
-      "+": () => zoom(0.7), "=": () => zoom(0.7), "-": () => zoom(1.45), "0": () => big && big.chart.timeScale().fitContent() };
+      "+": () => zoom(0.7), "=": () => zoom(0.7), "-": () => zoom(1.45), "0": showAllHistory };
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });
 
@@ -1166,10 +1242,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const PRODUCTS_URL = "https://www.binance.com/bapi/asset/v2/public/asset-service/product/get-products?includeEtf=true";
   const API = {
     spot: { nombre: "Spot", bases: ["https://api.binance.com", "https://data-api.binance.vision"], info: "/api/v3/exchangeInfo",
-      klines: "/api/v3/klines", ticker: "/api/v3/ticker/24hr", price: "/api/v3/ticker/price", limit: 6000,
+      klines: "/api/v3/klines", ticker: "/api/v3/ticker/24hr", price: "/api/v3/ticker/price", limit: 6000, maxKlines: 1000,
       infoW: 20, tickerW: 80, priceW: 4, klinesW: () => 2 },
     futures: { nombre: "Futures USDⓈ-M", bases: ["https://fapi.binance.com"], info: "/fapi/v1/exchangeInfo",
-      klines: "/fapi/v1/klines", ticker: "/fapi/v1/ticker/24hr", price: "/fapi/v1/ticker/price", limit: 2400,
+      klines: "/fapi/v1/klines", ticker: "/fapi/v1/ticker/24hr", price: "/fapi/v1/ticker/price", limit: 2400, maxKlines: 1500,
       infoW: 1, tickerW: 40, priceW: 2,
       klinesW: (n) => (n < 100 ? 1 : n < 500 ? 2 : n <= 1000 ? 5 : 10) },
   };
@@ -1283,27 +1359,66 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const liveApis = {}, liveDown = {}, pendingCandles = new Map();
   const NEVER = new AbortController().signal;
   function isFresh(it, tf) { return !!rowsFor(it, tf) && !!it._fresh && it._fresh[tf] >= state.freshSince; }
-  // Descarga las velas de una moneda en esa temporalidad. Si no se puede (sin conexión, dentro de
-  // Claude, datos de ejemplo), el gráfico usa las velas que ya traía el informe.
-  function loadCandles(it, tf) {
+  const flag = (it, name, tf) => !!(it[name] && it[name][tf]);
+  const setFlag = (it, name, tf) => { (it[name] = it[name] || {})[tf] = true; };
+  function setRows(it, tf, rows) {
+    if (tf === state.data.intervalo) it.velas = rows; else (it.graficos = it.graficos || {})[tf] = rows;
+    if (it._sd) delete it._sd[tf];
+  }
+  // Velas nuevas sobre las que ya había: se conservan las anteriores (el historial cargado en el visor) si
+  // empalman sin hueco con las nuevas; si no, se reemplazan.
+  function mergeRows(old, fresh, tf) {
+    if (!old || !old.length || !fresh.length) return fresh;
+    const first = fresh[0][0];
+    if (old[0][0] >= first || old[old.length - 1][0] < first - tfMs(tf)) return fresh;
+    return old.filter((k) => k[0] < first).concat(fresh);
+  }
+  // Descarga las velas más recientes de una moneda en esa temporalidad: las del escaneo para las tarjetas y,
+  // con deep, el máximo que da Binance en una petición (1000 en spot, 1500 en futuros) para el visor. Si no se
+  // puede (sin conexión, dentro de Claude, datos de ejemplo), el gráfico usa las velas que ya tenía.
+  function loadCandles(it, tf, deep) {
     const cfg = API[it.mercado];
-    if (!cfg || state.data.ejemplo || isFresh(it, tf) || Date.now() - (liveDown[it.mercado] || 0) < 60000) {
+    const ready = isFresh(it, tf) && (!deep || flag(it, "_deep", tf) || flag(it, "_histEnd", tf));
+    if (!cfg || state.data.ejemplo || ready || Date.now() - (liveDown[it.mercado] || 0) < 60000) {
       return Promise.resolve(isFresh(it, tf));
     }
-    const key = it.mercado + ":" + it.simbolo + ":" + tf;
+    const limit = deep ? cfg.maxKlines : CHART_LIMIT;
+    const key = it.mercado + ":" + it.simbolo + ":" + tf + ":" + limit;
     if (!pendingCandles.has(key)) {
       const api = liveApis[it.mercado] || (liveApis[it.mercado] = new BinanceApi(cfg, NEVER));
-      pendingCandles.set(key, api.get(cfg.klines, { symbol: it.simbolo, interval: tf, limit: CHART_LIMIT }, cfg.klinesW(CHART_LIMIT))
+      pendingCandles.set(key, api.get(cfg.klines, { symbol: it.simbolo, interval: tf, limit }, cfg.klinesW(limit))
         .then((rows) => {
           const data = rows.map(row);
           if (!data.length) return false;
-          if (tf === state.data.intervalo) it.velas = data; else (it.graficos = it.graficos || {})[tf] = data;
-          if (it._sd) delete it._sd[tf];
+          setRows(it, tf, mergeRows(rowsFor(it, tf), data, tf));
+          if (deep) setFlag(it, "_deep", tf);
+          if (data.length < limit) setFlag(it, "_histEnd", tf);  // la moneda no tiene más velas
           (it._fresh = it._fresh || {})[tf] = Date.now();
           it.precio = data[data.length - 1][4];
           return true;
         })
         .catch((err) => { if (err && err.fatal) liveDown[it.mercado] = Date.now(); return false; })
+        .finally(() => pendingCandles.delete(key)));
+    }
+    return pendingCandles.get(key);
+  }
+  // Una página de velas anteriores a la primera que hay (para ver el historial en el visor).
+  // Devuelve cuántas añadió; 0 si ya no hay más o falló.
+  function loadOlder(it, tf) {
+    const cfg = API[it.mercado], rows = rowsFor(it, tf);
+    if (!cfg || !rows || state.data.ejemplo || flag(it, "_histEnd", tf)) return Promise.resolve(0);
+    const key = "antes:" + it.mercado + ":" + it.simbolo + ":" + tf;
+    if (!pendingCandles.has(key)) {
+      const api = liveApis[it.mercado] || (liveApis[it.mercado] = new BinanceApi(cfg, NEVER));
+      const limit = cfg.maxKlines;
+      pendingCandles.set(key, api.get(cfg.klines, { symbol: it.simbolo, interval: tf, endTime: String(rows[0][0] - 1), limit }, cfg.klinesW(limit))
+        .then((raw) => {
+          if (raw.length < limit) setFlag(it, "_histEnd", tf);
+          const now = rowsFor(it, tf), older = raw.map(row).filter((k) => k[0] < now[0][0]);
+          if (older.length) setRows(it, tf, older.concat(now));
+          return older.length;
+        })
+        .catch(() => 0)
         .finally(() => pendingCandles.delete(key)));
     }
     return pendingCandles.get(key);
@@ -1500,7 +1615,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       const tfs = [...new Set([...CHART_TFS, opts.interval])].sort((a, b) => (TF_MINUTES[a] || 0) - (TF_MINUTES[b] || 0));
       const [f, m, s] = SCAN_PERIODS;
       setData({
-        generado: new Date().toISOString(), intervalo: opts.interval, intervalos_grafico: tfs, medias: SCAN_PERIODS,
+        generado: new Date().toISOString(), dia: fecha || todayKey(), intervalo: opts.interval, intervalos_grafico: tfs, medias: SCAN_PERIODS,
         condicion: "MA" + f + " > MA" + m + " y MA" + f + " < MA" + s, solo_cerradas: false, orden: state.sort, ejemplo: false, mercados,
       }, true);
     }
@@ -1537,7 +1652,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     try { const v = JSON.parse(store.get(key) || "null"); return v == null ? fallback : v; } catch (err) { return fallback; }
   }
   const localDays = () => readJSON("seguimiento", {});
-  const saveLocalDays = (days) => store.set("seguimiento", JSON.stringify(days));
+  const saveLocalDays = (days) => { store.set("seguimiento", JSON.stringify(days)); starCache = null; };
   const deletedDays = () => readJSON("seguimiento-borrados", {});
   const saveDeletedDays = (days) => store.set("seguimiento-borrados", JSON.stringify(days));
   // Cada día del seguimiento es una vela diaria de Binance: empieza a las 00:00 UTC y lleva la fecha con que
@@ -1581,27 +1696,60 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       quote: c.quote, precio: c.precio, hora: c.hora, intervalo: c.intervalo })) };
   }
   // ---------- estrellas ----------
-  // Una estrella fija una moneda (mercado + par): en el seguimiento aparece primero en cada día donde esté.
-  // Se guardan en este navegador y, con GitHub conectado, en docs/seguimiento/estrellas.json. Cada cambio
-  // lleva su hora y, al unir dos copias (otro dispositivo, la web publicada), gana el cambio más reciente;
-  // por eso también se guardan las estrellas quitadas.
+  // Una estrella fija una moneda en un día del seguimiento («2026-10-15|spot:GNSUSDT»): ese día aparece
+  // primero, y los demás días donde esté la moneda no cambian. Desde las tarjetas del escáner va al día del
+  // escaneo. Se guardan en este navegador y, con GitHub conectado, en docs/seguimiento/estrellas.json. Cada
+  // cambio lleva su hora y, al unir dos copias (otro dispositivo, la web publicada), gana el más reciente; por
+  // eso también se guardan las estrellas quitadas.
   const localStars = () => readJSON("estrellas", {});
+  const DAY_STAR = /^\d{4}-\d{2}-\d{2}\|[a-z]+:\S+$/, OLD_STAR = /^[a-z]+:\S+$/;
   let starCache = null, starEdits = 0, starTimer = 0;
+  const starKey = (fecha, c) => fecha + "|" + coinKey(c);
   function mergeStars(a, b) {
     const out = {};
     for (const src of [a, b]) {
       for (const [key, v] of Object.entries(src || {})) {
-        if (!v || typeof v.activa !== "boolean" || !/^[a-z]+:\S+$/.test(key)) continue;
+        if (!v || typeof v.activa !== "boolean" || !DAY_STAR.test(key)) continue;
         if (!out[key] || String(v.hora) > out[key].hora) out[key] = { activa: v.activa, hora: String(v.hora || "") };
       }
     }
     return out;
   }
-  function starMap() { return starCache || (starCache = mergeStars(track.remoteStars, localStars())); }
-  function isStarred(c) { const v = starMap()[coinKey(c)]; return !!(v && v.activa); }
-  function toggleStar(c, button) {
-    const key = coinKey(c), stars = localStars();
-    stars[key] = { activa: !isStarred(c), hora: new Date().toISOString() };
+  // Las estrellas de antes eran de la moneda, sin día: pasan al día del seguimiento en que se pusieron (el de la
+  // vela diaria de ese momento) o, si la moneda no estaba ese día, al último día anterior en que estuvo.
+  function upgradeStars(map) {
+    const out = {}, days = allDays();
+    for (const [key, v] of Object.entries(map || {})) {
+      if (!v || typeof v.activa !== "boolean") continue;
+      if (DAY_STAR.test(key)) { out[key] = v; continue; }
+      if (!OLD_STAR.test(key) || !v.activa || !isFinite(Date.parse(v.hora))) continue;  // las quitadas ya no hacen falta
+      const target = dayKeyOf(Date.parse(v.hora));
+      const has = (d) => d.monedas.some((c) => coinKey(c) === key);
+      const day = days.find((d) => d.fecha === target && has(d)) || days.find((d) => d.fecha <= target && has(d));
+      const k = (day ? day.fecha : target) + "|" + key;
+      if (!out[k] || String(v.hora) > String(out[k].hora)) out[k] = v;
+    }
+    return out;
+  }
+  function migrateLocalStars() {
+    const local = localStars();
+    if (!Object.keys(local).some((k) => OLD_STAR.test(k))) return;
+    store.set("estrellas", JSON.stringify(upgradeStars(local)));
+    store.set("estrellas-pendiente", "1");  // con GitHub conectado, el archivo también pasa al formato por día
+    starCache = null;
+  }
+  function starMap() { return starCache || (starCache = mergeStars(upgradeStars(track.remoteStars), upgradeStars(localStars()))); }
+  function isStarred(fecha, c) { const v = starMap()[starKey(fecha, c)]; return !!(v && v.activa); }
+  // Día al que van las estrellas de las tarjetas del escáner: el del escaneo.
+  function scanDay() {
+    const d = state.data || {};
+    if (d.dia) return d.dia;
+    const ms = Date.parse(d.generado);
+    return isFinite(ms) ? dayKeyOf(ms) : todayKey();
+  }
+  function toggleStar(fecha, c, button) {
+    const key = starKey(fecha, c), stars = localStars();
+    stars[key] = { activa: !isStarred(fecha, c), hora: new Date().toISOString() };
     store.set("estrellas", JSON.stringify(stars));
     store.set("estrellas-pendiente", "1");
     starCache = null;
@@ -1629,11 +1777,12 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const path = "/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) + "/contents/docs/seguimiento/estrellas.json";
     for (let attempt = 0; attempt < 3; attempt++) {
       const edits = starEdits;
+      if (!track.remoteLoaded) await loadRemote();  // hacen falta los días para pasar las estrellas antiguas a su día
       const current = await gh(cfg, "GET", path + "?ref=" + encodeURIComponent(cfg.branch));
       const before = current && current.content ? b64decode(current.content) : null;
       let remote = {};
       try { remote = (JSON.parse(before || "{}") || {}).estrellas; } catch (err) { /* archivo dañado: se reemplaza */ }
-      const merged = mergeStars(remote, localStars());
+      const merged = mergeStars(upgradeStars(remote), upgradeStars(localStars()));
       const text = starsText(merged);
       if (text !== before) {
         const active = Object.values(merged).filter((v) => v.activa).length;
@@ -1646,7 +1795,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
           continue;
         }
       }
-      store.set("estrellas", JSON.stringify(mergeStars(merged, localStars())));
+      store.set("estrellas", JSON.stringify(mergeStars(merged, upgradeStars(localStars()))));
       if (edits === starEdits) store.set("estrellas-pendiente", "");  // si se cambió alguna mientras tanto, sigue pendiente
       starCache = null;
       return;
@@ -1825,7 +1974,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     renderTracking();
   }
   async function loadRemote() {
-    if (location.protocol === "file:") return;  // informe abierto desde el disco: no hay seguimiento publicado
+    if (location.protocol === "file:") { migrateLocalStars(); return; }  // informe abierto desde el disco: sin seguimiento publicado
     try {
       const resp = await fetch("seguimiento.json?t=" + Date.now(), { cache: "no-store" });
       if (!resp.ok) return;
@@ -1842,6 +1991,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       for (const fecha of Object.keys(deleted)) if (!days[fecha]) { delete deleted[fecha]; changed = true; }
       if (changed) saveDeletedDays(deleted);
       track.remoteLoaded = true;
+      migrateLocalStars();
     } catch (err) { /* página abierta como archivo o en otro alojamiento: solo hay datos de este navegador */ }
   }
   async function refreshPrices() {
@@ -2064,7 +2214,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       const prices = track.prices[c.mercado];
       const now = prices ? prices.get(c.simbolo) : undefined;
       const pct = now != null && c.precio ? (now - c.precio) / c.precio * 100 : null;
-      return Object.assign({}, c, { ahora: now == null ? null : now, pct, orden: i, estrella: isStarred(c) });
+      return Object.assign({}, c, { ahora: now == null ? null : now, pct, orden: i, estrella: isStarred(day.fecha, c) });
     });
   }
   function summarize(coins) {
@@ -2125,7 +2275,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const body = h("tbody");
     coins.forEach((c, i) => {
       const tr = h("tr", { tabindex: "0", title: "Ver el gráfico de " + c.simbolo },
-        h("td", { class: "c-coin" }, starButton(c), h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
+        h("td", { class: "c-coin" }, starButton(c, day.fecha), h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
           h("span", { class: "badge", text: MARKET_NAMES[c.mercado] || c.mercado })),
         h("td", { class: "r num c-then", "data-label": shortDate(day.fecha), text: fmtPrice(c.precio) }),
         h("td", { class: "r num c-now", "data-label": "ahora", text: c.ahora == null ? "—" : fmtPrice(c.ahora) }),
