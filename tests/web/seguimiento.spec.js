@@ -237,3 +237,71 @@ test('las estrellas de antes (sin día) pasan al día en que se pusieron', async
   await expect(page.locator('#track-sync')).toContainText('Subido');
   expect(Object.keys(JSON.parse(fake.gh.files['docs/seguimiento/estrellas.json'].text).estrellas)).toEqual(['2026-10-13|spot:AAAUSDT', '2026-10-15|spot:GNSUSDT']);
 });
+
+test('sección «Llegaron a +50 %»: todas las que llegaron, primero las de estrella', async ({ page, context }) => {
+  const now = Math.floor(Date.now() / 1000) * 1000;
+  const d5 = now - 50 * HOUR, d3 = now - 100 * HOUR;  // horas de escaneo del 5 y del 3 de octubre
+  const flat = (p) => candles(Array(300).fill(p), '1d');
+  const fake = new Fake({
+    remote: {
+      dias: [
+        { fecha: '2026-10-05', monedas: [coin('HITUSDT', 10, new Date(d5).toISOString()), coin('NOUSDT', 10, new Date(d5).toISOString())] },
+        { fecha: '2026-10-03', monedas: [coin('AAAUSDT', 10, new Date(d3).toISOString()), coin('GNSUSDT', 10, new Date(d3).toISOString())] },
+      ],
+      estrellas: { '2026-10-03|spot:GNSUSDT': { activa: true, hora: new Date(d3).toISOString() } },
+    },
+    prices: { spot: { HITUSDT: 10, NOUSDT: 11, AAAUSDT: 10, GNSUSDT: 10 }, futures: {} },
+    paths: {
+      'spot:HITUSDT': { base: 10, spikes: [{ at: now - 20 * HOUR, high: 16 }] },   // llegó hace 20 h (30 h tras su escaneo)
+      'spot:NOUSDT': { base: 11, spikes: [{ at: now - 30 * HOUR, high: 12 }] },    // +20 %: no llegó
+      'spot:AAAUSDT': { base: 10, spikes: [{ at: now - 10 * HOUR, high: 15.5 }] }, // la más reciente
+      'spot:GNSUSDT': { base: 10, spikes: [{ at: d3 + 10 * HOUR, high: 20 }] },    // la más antigua, pero con estrella
+    },
+    custom: { 'spot:HITUSDT:1d': flat(10), 'spot:NOUSDT:1d': flat(11), 'spot:AAAUSDT:1d': flat(10), 'spot:GNSUSDT:1d': flat(10) },
+  });
+  await fake.install(context);
+  await page.goto(URL + '#seguimiento');
+  await expect(page.locator('#track-views button')).toHaveText(['Por día', /^Llegaron a \+50 %/]);
+  await expect(page.locator('#track-views button').first()).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('#track-views button', { hasText: 'Llegaron' }).click();
+  const hits = page.locator('.day.hits');
+  await expect(hits.locator('.hits-title')).toHaveText('Llegaron a +50 %');
+  await expect(page.locator('.day-toggle')).toHaveCount(0);  // los días siguen ahí, en «Por día»
+  await expect(page.locator('#track-sort-label')).toBeHidden();
+  const rows = () => page.$$eval('.day.hits tbody tr', (trs) => trs.map((tr) => (tr.querySelector('.star').getAttribute('aria-pressed') === 'true' ? '★' : '☆') +
+    tr.querySelector('.coin').textContent + ' ' + tr.querySelector('.c-day').textContent + ' ' + tr.querySelector('.c-r50').firstChild.textContent));
+  await expect.poll(rows).toEqual(['★GNS/USDT 3 oct 1 día', '☆AAA/USDT 3 oct 4 días', '☆HIT/USDT 5 oct 2 días']);
+  await expect(hits.locator('.day-stats')).toContainText('3 de 4 monedas del seguimiento');
+  await expect(hits.locator('.day-stats')).toContainText('★ 1 con estrella');
+  await expect(hits.locator('.day-stats')).not.toContainText('Revisando');
+  await expect(hits.locator('thead th')).toHaveText(['Moneda', 'Seguimiento', 'Precio seguimiento', 'Precio actual', 'Mínimo', 'Máximo', 'Rumbo al 50', 'Variación', 'Escaneo']);
+  await expect(page.locator('#track-views button', { hasText: 'Llegaron' }).locator('.count')).toHaveText('3');
+
+  // Estrella desde esta sección: se guarda en el día de esa moneda y sube arriba.
+  await hits.locator('tbody tr', { hasText: 'AAA' }).locator('.star').click();
+  await expect.poll(rows).toEqual(['★AAA/USDT 3 oct 4 días', '★GNS/USDT 3 oct 1 día', '☆HIT/USDT 5 oct 2 días']);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('momento-b:estrellas')));
+  expect(Object.keys(saved)).toEqual(['2026-10-03|spot:AAAUSDT']);
+
+  // El gráfico se abre con el día de esa moneda.
+  await hits.locator('tbody tr', { hasText: 'HIT' }).click();
+  await expect(page.locator('#v-stats')).toContainText('Seguimiento 5 de octubre');
+  await page.keyboard.press('Escape');
+
+  await page.locator('#track-market button', { hasText: 'Futuros' }).click();
+  await expect(hits.locator('.gh-note')).toHaveText('Ninguna moneda del seguimiento ha llegado todavía a +50 %.');
+  await page.locator('#track-market button', { hasText: 'Todos' }).click();
+
+  // La vista elegida se recuerda; «Por día» vuelve a los días como siempre.
+  await page.reload();
+  await expect(page.locator('.day.hits')).toBeVisible();
+  await page.locator('#track-views button', { hasText: 'Por día' }).click();
+  await expect(page.locator('.day h2')).toHaveText(['Seguimiento 5 de octubre', 'Seguimiento 3 de octubre']);
+  await expect(page.locator('#track-sort-label')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.locator('#track-views button', { hasText: 'Llegaron' }).click();
+  await expect(page.locator('.day.hits tbody tr').first().locator('.c-day')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

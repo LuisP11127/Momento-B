@@ -84,6 +84,13 @@ En la pestaña **Seguimiento** de la web:
   gráfico ampliado, al día del escaneo. Cuenta el mercado: la de spot y la de futuros
   se marcan por separado. Las estrellas de antes (que no tenían día) pasan solas al
   día en que se pusieron;
+- **Por día / Llegaron a +50 %**: la segunda vista junta en una sola lista las monedas de
+  todos los días que llegaron a +50 % (sin quitar nada de los días), con el día del
+  seguimiento de cada una: primero las que tienen estrella y después de la que llegó más
+  recientemente a la más antigua. Si una moneda llegó en varios días de seguimiento, sale
+  una vez por día, cada una con su precio. La primera vez revisa el máximo de todas las
+  monedas (se ve el progreso); después queda guardado en el navegador y las que aún no
+  llegaron se vuelven a mirar cada 15 minutos;
 - filtros **Todos / Spot / Futuros / No repetidas** y orden por subida, bajada,
   moneda u orden del escaneo (las monedas con estrella van siempre primero);
 - al pulsar una moneda se abre su gráfico (1D por defecto) con una línea en el
