@@ -177,6 +177,10 @@ body.tracking .scan-only { display: none !important; }
 .day-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .day-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .day-toggle h2 { margin: 0; font: 600 21px/1.15 var(--font-display); letter-spacing: 0.01em; text-wrap: balance; }
+/* Sección «Llegaron a +50 %»: todas las monedas del seguimiento que llegaron, de todos los días. */
+.hits-title { margin: 0; font: 600 21px/1.15 var(--font-display); letter-spacing: 0.01em; }
+.day-stats b.star-count { color: var(--star); }
+.coins .c-day { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
 .day-stats { display: flex; flex-wrap: wrap; gap: 3px 14px; font-size: 13px; color: var(--muted); }
 .day-stats b { font: 500 13px var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
 .day-stats b.up { color: var(--up); }
@@ -219,6 +223,9 @@ body.tracking .scan-only { display: none !important; }
   .coins .c-high { grid-area: high; font-size: 12.5px; }
   .coins .c-r50 { grid-area: r50; text-align: left; font-size: 12.5px; }
   .coins .c-r50:not(.hit) { display: none; }
+  .coins.with-day tbody tr { grid-template-areas: "coin pct" "day day" "then now" "low high" "r50 r50"; }
+  .coins .c-day { grid-area: day; font-size: 12.5px; }
+  .coins .c-day::before { content: attr(data-label) " "; font-family: var(--font-body); }
   .coins .rng { font-size: 11.5px; }
   .coins .c-then::before, .coins .c-now::before, .coins .c-low::before, .coins .c-high::before, .coins .c-r50::before { content: attr(data-label) " "; color: var(--muted); font-family: var(--font-body); font-weight: 400; }
 }
@@ -346,8 +353,9 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
 
   <section class="track" id="view-track" aria-label="Seguimiento" hidden>
     <div class="track-bar">
+      <div class="seg views-track" id="track-views" role="group" aria-label="Vista del seguimiento"></div>
       <div class="seg" id="track-market" role="group" aria-label="Mercado"></div>
-      <label>Orden
+      <label id="track-sort-label">Orden
         <select id="track-sort">
           <option value="subida">Mayor subida</option>
           <option value="bajada">Mayor bajada</option>
@@ -1643,7 +1651,8 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     moneda: (a, b) => a.simbolo.localeCompare(b.simbolo),
     escaneo: (a, b) => a.orden - b.orden,
   };
-  const track = { remote: {}, remoteStars: {}, prices: {}, market: "todos", sort: "subida", timer: null, sync: "", syncError: "", busy: false, remoteLoaded: false };
+  const track = { remote: {}, remoteStars: {}, prices: {}, market: "todos", sort: "subida", timer: null, sync: "", syncError: "", busy: false, remoteLoaded: false,
+    view: "dias" };  // "dias" (un apartado por día) o "50" (las que llegaron a +50 %)
   const GH_API = "https://api.github.com";
   class GhError extends Error {
     constructor(status, message) { super(message); this.status = status; }
@@ -2032,6 +2041,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const IV_MS = { "1m": 60000, "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000, "1d": 86400000 };
   let ranges = readJSON("seguimiento-rangos", {});
   const rangeWanted = new Map(), rangeActive = new Set();
+  let hitsTimer = 0;
   let rangeSaveTimer = null;
   function saveRanges() {
     clearTimeout(rangeSaveTimer);
@@ -2104,13 +2114,15 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (acc.hit != null) entry.hit = Math.max(acc.hit, start);  // la primera vela de 1 minuto empieza antes del escaneo
     ranges[key] = entry;
   }
-  function wantRanges(fecha, coins) {
-    const now = Date.now();
+  // opts.ttl: cada cuánto se vuelve a mirar; opts.skipHits: las que ya llegaron a +50 % no hace falta volver a mirarlas.
+  function wantRanges(fecha, coins, opts = {}) {
+    const now = Date.now(), ttl = opts.ttl || RANGE_TTL;
     for (const c of coins) {
       if (!API[c.mercado] || !isFinite(Date.parse(c.hora)) || !c.precio) continue;
       const key = rangeKey(fecha, c), r = ranges[key];
       const stale = r && !r.error && r.hit == null && r.high >= c.precio * HIT_RATIO;  // guardado sin la hora del +50 %
-      if (r && !stale && now - r.checked < (r.error ? RANGE_RETRY : RANGE_TTL)) continue;
+      if (opts.skipHits && r && !r.error && r.hit != null) continue;
+      if (r && !stale && now - r.checked < (r.error ? RANGE_RETRY : ttl)) continue;
       if (!rangeWanted.has(key) && !rangeActive.has(key)) rangeWanted.set(key, { fecha, coin: c });
     }
     pumpRanges();
@@ -2128,6 +2140,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         .finally(() => {
           rangeActive.delete(key);
           showRange(key);
+          if (track.view === "50" && !$("view-track").hidden) {  // la lista de +50 % se rehace como mucho cada segundo
+            clearTimeout(hitsTimer);
+            hitsTimer = setTimeout(renderTracking, 1000);
+          }
           if (!rangeActive.size && !rangeWanted.size) saveRanges();  // cola terminada: se guarda ya
           else { clearTimeout(rangeSaveTimer); rangeSaveTimer = setTimeout(saveRanges, 1000); }
           pumpRanges();
@@ -2214,7 +2230,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       const prices = track.prices[c.mercado];
       const now = prices ? prices.get(c.simbolo) : undefined;
       const pct = now != null && c.precio ? (now - c.precio) / c.precio * 100 : null;
-      return Object.assign({}, c, { ahora: now == null ? null : now, pct, orden: i, estrella: isStarred(day.fecha, c) });
+      return Object.assign({}, c, { fecha: day.fecha, ahora: now == null ? null : now, pct, orden: i, estrella: isStarred(day.fecha, c) });
     });
   }
   function summarize(coins) {
@@ -2261,11 +2277,14 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     wrap.append(ask);
     return wrap;
   }
-  function coinTable(day, coins) {
-    const table = h("table", { class: "coins" });
+  // Tabla de monedas del seguimiento. Cada moneda lleva su día (c.fecha); withDay añade la columna con el día
+  // (la sección de +50 % junta monedas de varios días).
+  function coinTable(coins, withDay) {
+    const table = h("table", { class: "coins" + (withDay ? " with-day" : "") });
     table.append(h("thead", null, h("tr", null,
       h("th", { text: "Moneda" }),
-      h("th", { class: "r", text: "Precio " + shortDate(day.fecha), title: "Precio en el momento del escaneo" }),
+      withDay ? h("th", { text: "Seguimiento", title: "Día del seguimiento en que apareció" }) : null,
+      h("th", { class: "r", text: withDay ? "Precio seguimiento" : "Precio " + shortDate(coins[0].fecha), title: "Precio en el momento del escaneo" }),
       h("th", { class: "r", text: "Precio actual" }),
       h("th", { class: "r", text: "Mínimo", title: "Precio más bajo desde la hora del escaneo" }),
       h("th", { class: "r", text: "Máximo", title: "Precio más alto desde la hora del escaneo" }),
@@ -2275,20 +2294,21 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const body = h("tbody");
     coins.forEach((c, i) => {
       const tr = h("tr", { tabindex: "0", title: "Ver el gráfico de " + c.simbolo },
-        h("td", { class: "c-coin" }, starButton(c, day.fecha), h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
+        h("td", { class: "c-coin" }, starButton(c, c.fecha), h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
           h("span", { class: "badge", text: MARKET_NAMES[c.mercado] || c.mercado })),
-        h("td", { class: "r num c-then", "data-label": shortDate(day.fecha), text: fmtPrice(c.precio) }),
+        withDay ? h("td", { class: "c-day", "data-label": "Seguimiento", text: shortDate(c.fecha) }) : null,
+        h("td", { class: "r num c-then", "data-label": shortDate(c.fecha), text: fmtPrice(c.precio) }),
         h("td", { class: "r num c-now", "data-label": "ahora", text: c.ahora == null ? "—" : fmtPrice(c.ahora) }),
-        rangeCell(day.fecha, c, "low"),
-        rangeCell(day.fecha, c, "high"),
+        rangeCell(c.fecha, c, "low"),
+        rangeCell(c.fecha, c, "high"),
         h("td", { class: "r num c-r50", "data-label": "a +50 %" }),
         h("td", { class: "r num c-pct " + (c.pct == null ? "" : c.pct >= 0 ? "up" : "down") }, c.pct == null ? "—" : fmtPct(c.pct), changeBar(c.pct)),
         h("td", { class: "col-scan muted", text: timeOf(c.hora) + (c.intervalo ? " · velas " + tfLabel(c.intervalo) : "") }));
-      tr.dataset.key = rangeKey(day.fecha, c);
+      tr.dataset.key = rangeKey(c.fecha, c);
       tr._coin = c;
-      tr._fecha = day.fecha;
-      fillRumbo(tr.querySelector(".c-r50"), day.fecha, c);
-      const open = () => openTrackedChart(day, coins, i);
+      tr._fecha = c.fecha;
+      fillRumbo(tr.querySelector(".c-r50"), c.fecha, c);
+      const open = () => openTrackedChart(coins, i);
       tr.addEventListener("click", open);
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
       body.append(tr);
@@ -2315,8 +2335,54 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       h("span", { text: daysAgo(day.fecha) }));
     const card = h("article", { class: "day", "data-fecha": day.fecha },
       h("header", { class: "day-head" }, toggle, stats, h("div", { class: "day-actions" }, deleteControl(day.fecha))));
-    if (open) card.append(coins.length ? coinTable(day, coins) : h("p", { class: "gh-note", style: "padding: 0 14px 12px", text: "Ninguna moneda con este filtro." }));
+    if (open) card.append(coins.length ? coinTable(coins) : h("p", { class: "gh-note", style: "padding: 0 14px 12px", text: "Ninguna moneda con este filtro." }));
     return card;
+  }
+  // Monedas de todos los días que llegaron a +50 % (con el filtro de mercado), y cuántas faltan por revisar.
+  function hitRows(days) {
+    const rows = [];
+    let total = 0, checked = 0;
+    for (const day of days) {
+      for (const c of withPrices(day)) {
+        total++;
+        if (ranges[rangeKey(day.fecha, c)]) checked++;
+        const rumbo = rumboOf(day.fecha, c, c.ahora);
+        if (rumbo) rows.push(Object.assign(c, { rumbo }));
+      }
+    }
+    // Primero las que tienen estrella; después, de la que llegó más recientemente a la más antigua.
+    rows.sort((a, b) => (b.estrella - a.estrella) || (b.rumbo.at - a.rumbo.at));
+    return { rows, total, checked };
+  }
+  const HITS_TTL = 15 * 60000;  // en la sección de +50 % basta con mirar cada 15 minutos las que aún no llegaron
+  function hitsSection(days) {
+    for (const day of days) wantRanges(day.fecha, day.monedas, { ttl: HITS_TTL, skipHits: true });
+    const { rows, total, checked } = hitRows(days);
+    const avg = rows.length ? rows.reduce((sum, c) => sum + c.rumbo.days, 0) / rows.length : 0;
+    const starred = rows.filter((c) => c.estrella).length, pending = total - checked;
+    const card = h("article", { class: "day hits" },
+      h("header", { class: "day-head" },
+        h("h2", { class: "hits-title", text: "Llegaron a +50 %" }),
+        h("div", { class: "day-stats" },
+          h("span", null, h("b", { text: String(rows.length) }), " de " + total + (total === 1 ? " moneda" : " monedas") + " del seguimiento"),
+          rows.length ? h("span", null, "Tardaron de media ", h("b", { text: avg.toFixed(1).replace(".", ",") + " días" })) : null,
+          starred ? h("span", null, h("b", { class: "star-count", text: "★ " + starred }), " con estrella") : null,
+          pending > 0 ? h("span", { text: "Revisando " + checked + " de " + total + "…" }) : null)));
+    card.append(rows.length ? coinTable(rows, true) : h("p", { class: "gh-note", style: "padding: 0 14px 12px",
+      text: pending > 0 ? "Revisando el máximo de cada moneda desde su escaneo…" : "Ninguna moneda del seguimiento ha llegado todavía a +50 %." }));
+    return card;
+  }
+  function renderTrackViews(days) {
+    const seg = $("track-views");
+    seg.textContent = "";
+    const hits = hitRows(days).rows.length;
+    for (const [key, label] of [["dias", "Por día"], ["50", "Llegaron a +50 %"]]) {
+      const b = h("button", { type: "button", "aria-pressed": String(key === track.view) }, label,
+        key === "50" && hits ? h("span", { class: "count", text: String(hits) }) : null);
+      b.addEventListener("click", () => { track.view = key; store.set("seguimiento-vista", key); renderTracking(); });
+      seg.append(b);
+    }
+    $("track-sort-label").hidden = track.view === "50";  // esa sección tiene su propio orden
   }
   function renderTrackMarket() {
     const seg = $("track-market");
@@ -2364,6 +2430,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     list.textContent = "";
     const days = allDays();
     pruneRanges(days);
+    renderTrackViews(days);
     if (!days.length) {
       const go = h("button", { class: "btn", type: "button", text: "Ir al escáner" });
       go.addEventListener("click", () => { location.hash = ""; });
@@ -2372,17 +2439,18 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         go));
       return;
     }
+    if (track.view === "50") { list.append(hitsSection(days)); return; }
     days.forEach((day, i) => list.append(dayCard(day, i)));
   }
-  // Abre una moneda del seguimiento en el visor de gráficos, con el precio de entrada marcado.
-  function openTrackedChart(day, coins, index) {
+  // Abre una moneda del seguimiento en el visor de gráficos, con el precio de entrada marcado (cada una con su día).
+  function openTrackedChart(coins, index) {
     if (!state.trackSaved) state.trackSaved = { view: state.view, data: state.data, current: state.current, vtf: state.vtf };
     state.data = TRACK_CTX;
     state.tf = state.tf || DEFAULT_TF;
     state.view = coins.map((c) => ({
       mercado: c.mercado, simbolo: c.simbolo, base: c.base, quote: c.quote, precio: c.ahora == null ? c.precio : c.ahora,
       var_24h_pct: null, dist_ma_lenta_pct: null, velas_desde_cruce: null, cruce_visible: true,
-      _seguimiento: { fecha: day.fecha, precio: c.precio, hora: c.hora },
+      _seguimiento: { fecha: c.fecha, precio: c.precio, hora: c.hora },
     }));
     openViewer(index);
   }
@@ -2439,6 +2507,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   $("gh-form").addEventListener("submit", connectGitHub);
   $("gh-cancel").addEventListener("click", () => showGhForm(false));
   track.sort = TRACK_SORTS[store.get("seguimiento-orden")] ? store.get("seguimiento-orden") : track.sort;
+  track.view = store.get("seguimiento-vista") === "50" ? "50" : "dias";
   normalizeLocalDays();
 
   // ---------- arranque ----------
