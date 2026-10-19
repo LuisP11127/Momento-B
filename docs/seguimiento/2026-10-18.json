@@ -1,0 +1,86 @@
+{
+ "fecha": "2026-10-18",
+ "monedas": [
+  {
+   "mercado": "futures",
+   "simbolo": "ZEREBROUSDT",
+   "base": "ZEREBRO",
+   "quote": "USDT",
+   "precio": 0.024394,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AINUSDT",
+   "base": "AIN",
+   "quote": "USDT",
+   "precio": 0.03912,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "VELVETUSDT",
+   "base": "VELVET",
+   "quote": "USDT",
+   "precio": 0.06441,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "UAIUSDT",
+   "base": "UAI",
+   "quote": "USDT",
+   "precio": 0.2922,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "JCTUSDT",
+   "base": "JCT",
+   "quote": "USDT",
+   "precio": 0.001954,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ONUSDT",
+   "base": "ON",
+   "quote": "USDT",
+   "precio": 0.1248,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "COLLECTUSDT",
+   "base": "COLLECT",
+   "quote": "USDT",
+   "precio": 0.02289,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "MAGMAUSDT",
+   "base": "MAGMA",
+   "quote": "USDT",
+   "precio": 0.27626,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "GWEIUSDT",
+   "base": "GWEI",
+   "quote": "USDT",
+   "precio": 0.0224,
+   "hora": "2026-10-19T15:59:19.633Z",
+   "intervalo": "1d"
+  }
+ ]
+}
