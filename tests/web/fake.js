@@ -31,13 +31,14 @@ const SHAPES = {
 
 const closesOf = (shape, n) => Array.from({ length: n }, (_, i) => SHAPES[shape](i, n));
 
-// Velas al estilo Binance alineadas para que la última sea la vela en curso.
+// Velas al estilo Binance alineadas para que la última sea la vela en curso (o la que contiene «now»).
+// Volumen de 1000 unidades; las compras a mercado (taker) son el 60 % en las velas verdes y el 40 % en las rojas.
 function candles(closes, tf, now = Date.now()) {
   const step = STEP(tf), first = Math.floor(now / step) * step - (closes.length - 1) * step;
   return closes.map((c, i) => {
-    const o = i ? closes[i - 1] : c;
+    const o = i ? closes[i - 1] : c, quote = 1000 * c, buy = quote * (c >= o ? 0.6 : 0.4);
     return [first + i * step, String(o), String(Math.max(o, c) * 1.01), String(Math.min(o, c) * 0.99), String(c), '1000',
-      first + (i + 1) * step - 1, '0', 1, '0', '0', '0'];
+      first + (i + 1) * step - 1, String(quote), 1, String(buy / c), String(buy), '0'];
   });
 }
 // Velas a partir del cuerpo de cada una en % (apertura → cierre), la última en curso.
@@ -75,8 +76,11 @@ class Fake {
     this.paths = opts.paths || {};     // "mercado:SÍMBOLO" -> { base, spikes } (consultas con startTime)
     this.history = opts.history || {}; // "mercado:SÍMBOLO:intervalo" -> velas que tiene la moneda (historial con endTime)
     this.full = {};
+    this.books = opts.books || {};     // "mercado:SÍMBOLO" -> { bids, asks } (libro de órdenes)
+    this.funding = opts.funding || {}; // "SÍMBOLO" -> última financiación de futuros
     this.hook = null;                  // (petición de velas) -> undefined | 'hang' | 'reset' | { status, headers }
     this.requests = [];                // peticiones de velas
+    this.calls = [];                   // otras peticiones a Binance: { mk, path, params }
     this.gh = { files: {}, log: [], fail: false };
   }
 
@@ -142,7 +146,7 @@ class Fake {
     }
     if (url.pathname.endsWith('/ticker/24hr')) return this.json(route, Object.keys(symbols).map((s) => ({ symbol: s, quoteVolume: '5000000', priceChangePercent: '2.5' })));
     if (url.pathname.endsWith('/ticker/price')) return this.json(route, Object.entries(this.prices[mk] || {}).map(([symbol, price]) => ({ symbol, price: String(price) })));
-    if (!url.pathname.endsWith('/klines')) return route.abort();
+    if (!url.pathname.endsWith('/klines')) return this.extra(route, mk, url);
 
     const q = url.searchParams, symbol = q.get('symbol'), tf = q.get('interval'), limit = +q.get('limit');
     const info = { mk, symbol, tf, limit, startTime: q.has('startTime') ? +q.get('startTime') : null,
@@ -162,9 +166,40 @@ class Fake {
       return this.json(route, (info.endTime != null ? full.filter((r) => r[0] <= info.endTime) : full).slice(-limit));
     }
     const custom = this.custom[info.key];
-    if (custom) return this.json(route, custom.slice(-limit));
+    if (custom) return this.json(route, (info.endTime != null ? custom.filter((r) => r[0] <= info.endTime) : custom).slice(-limit));
     const shape = tf === this.scanTf ? (symbols[symbol] || 'up') : 'rebound';
-    return this.json(route, candles(closesOf(shape, limit), tf));
+    return this.json(route, candles(closesOf(shape, limit), tf, info.endTime != null ? info.endTime : undefined));
+  }
+
+  // Libro de órdenes, financiación e interés abierto (futuros).
+  extra(route, mk, url) {
+    const q = url.searchParams, symbol = q.get('symbol'), params = Object.fromEntries(q);
+    const path = url.pathname.replace(/^\/(api\/v3|fapi\/v1|futures\/data)\//, '');
+    this.calls.push({ mk, path, params });
+    if (path === 'depth') {
+      const book = this.books[mk + ':' + symbol];
+      if (book) return this.json(route, { lastUpdateId: 1, bids: book.bids.map(([p, v]) => [String(p), String(v)]), asks: book.asks.map(([p, v]) => [String(p), String(v)]) });
+      const mid = (this.prices[mk] || {})[symbol] || 100, side = (dir) => Array.from({ length: 100 }, (_, i) => [String(mid * (1 + dir * 0.001 * (i + 1))), '10']);
+      return this.json(route, { lastUpdateId: 1, bids: side(-1), asks: side(1) });
+    }
+    if (mk !== 'futures') return route.abort();
+    if (path === 'premiumIndex') {
+      return this.json(route, Object.keys(this.markets.futures || {}).map((s) => ({ symbol: s, lastFundingRate: String(this.funding[s] ?? 0.0001) })));
+    }
+    if (path === 'fundingRate') {
+      const end = +q.get('endTime') || Date.now();
+      return this.json(route, [{ symbol, fundingRate: String(this.funding[symbol] ?? 0.0001), fundingTime: end - 3600000 }]);
+    }
+    if (path === 'openInterestHist') {  // cada hora: contratos de 1000 a 1100 y precio de 100 a 105
+      const end = +q.get('endTime') || Date.now(), start = +q.get('startTime') || end - 25 * 3600000, hour = 3600000;
+      const out = [];
+      for (let t = Math.ceil(start / hour) * hour; t <= end; t += hour) out.push(t);
+      return this.json(route, out.map((t, i) => {
+        const oi = 1000 + 100 * i / Math.max(1, out.length - 1), px = 100 + 5 * i / Math.max(1, out.length - 1);
+        return { symbol, sumOpenInterest: String(oi), sumOpenInterestValue: String(oi * px), timestamp: t };
+      }));
+    }
+    return route.abort();
   }
 }
 

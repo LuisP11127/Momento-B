@@ -62,7 +62,7 @@ test('columnas del seguimiento y «Rumbo al 50» con su fecha, en verde', async 
   const { fake, hit } = rumboFake();
   await fake.install(context);
   await page.goto(URL + '#seguimiento');
-  await expect(page.locator('.day thead th')).toHaveText(['Moneda', 'Precio 5 oct', 'Precio actual', 'Mínimo', 'Máximo', 'Rumbo al 50', 'Variación', 'Escaneo']);
+  await expect(page.locator('.day thead th')).toHaveText(['Moneda', 'Precio 5 oct', 'Precio actual', 'Mínimo', 'Máximo', 'Rumbo al 50', 'Variación', 'Giro', 'Escaneo']);
   const hitRow = page.locator('.day tbody tr', { hasText: 'HIT' });
   const noRow = page.locator('.day tbody tr', { hasText: 'NO/' });
   const date = await page.evaluate((ms) => new Date(Math.floor(ms / 60000) * 60000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }), hit);
@@ -126,7 +126,8 @@ test('GitHub: sube el día, no repite subidas sin cambios y borra', async ({ pag
   expect(files.length).toBe(1);
   const saved = JSON.parse(fake.gh.files[files[0]].text);
   expect(saved.monedas.map((c) => c.mercado + ':' + c.simbolo).sort()).toEqual(['futures:AAAUSDT', 'futures:TSLABUSDT', 'spot:AAAUSDT']);
-  expect(Object.keys(saved.monedas[0])).toEqual(['mercado', 'simbolo', 'base', 'quote', 'precio', 'hora', 'intervalo']);
+  // Desde el indicador de giro, cada moneda guarda también su puntuación al escanear y el libro de órdenes.
+  expect(Object.keys(saved.monedas[0])).toEqual(['mercado', 'simbolo', 'base', 'quote', 'precio', 'hora', 'intervalo', 'giro', 'libro']);
 
   fake.gh.log.length = 0;
   await page.locator('#views button', { hasText: 'Escáner' }).click();
@@ -262,7 +263,7 @@ test('sección «Llegaron a +50 %»: todas las que llegaron, primero las de estr
   });
   await fake.install(context);
   await page.goto(URL + '#seguimiento');
-  await expect(page.locator('#track-views button')).toHaveText(['Por día', /^Llegaron a \+50 %/]);
+  await expect(page.locator('#track-views button')).toHaveText(['Por día', /^Llegaron a \+50 %/, 'Indicador de giro']);
   await expect(page.locator('#track-views button').first()).toHaveAttribute('aria-pressed', 'true');
 
   await page.locator('#track-views button', { hasText: 'Llegaron' }).click();
@@ -279,7 +280,7 @@ test('sección «Llegaron a +50 %»: todas las que llegaron, primero las de estr
   await expect(hits.locator('.day-stats')).toContainText('3 de 4 monedas del seguimiento');
   await expect(hits.locator('.day-stats')).toContainText('★ 1 con estrella');
   await expect(hits.locator('.day-stats')).not.toContainText('Revisando');
-  await expect(hits.locator('thead th')).toHaveText(['Moneda', 'Seguimiento', 'Precio seguimiento', 'Precio actual', 'Mínimo', 'Máximo', 'Rumbo al 50', 'Variación', 'Escaneo']);
+  await expect(hits.locator('thead th')).toHaveText(['Moneda', 'Seguimiento', 'Precio seguimiento', 'Precio actual', 'Mínimo', 'Máximo', 'Rumbo al 50', 'Variación', 'Giro', 'Escaneo']);
   await expect(page.locator('#track-views button', { hasText: 'Llegaron' }).locator('.count')).toHaveText('3');
 
   // Estrella desde esta sección: se guarda en el día de esa moneda y sube arriba.

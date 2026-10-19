@@ -84,19 +84,64 @@ En la pestaña **Seguimiento** de la web:
   gráfico ampliado, al día del escaneo. Cuenta el mercado: la de spot y la de futuros
   se marcan por separado. Las estrellas de antes (que no tenían día) pasan solas al
   día en que se pusieron;
-- **Por día / Llegaron a +50 %**: la segunda vista junta en una sola lista las monedas de
+- **Por día / Llegaron a +50 % / Indicador de giro**: la segunda vista junta en una sola lista las monedas de
   todos los días que llegaron a +50 % (sin quitar nada de los días), con el día del
   seguimiento de cada una: primero las que tienen estrella y después de la que llegó más
   recientemente a la más antigua. Cada moneda sale una sola vez, con el día de seguimiento
   más antiguo en que llegó (y «+N» si llegó también desde otros N días); si le pusiste
   estrella en otro día, esa fila sale también. La primera vez revisa el máximo de todas las
   monedas (se ve el progreso); después queda guardado en el navegador y las que aún no
-  llegaron se vuelven a mirar cada 15 minutos;
+  llegaron se vuelven a mirar cada 15 minutos. La tercera es el análisis del
+  [indicador de giro](#indicador-de-giro);
+- columna **Giro**: la puntuación de giro de cada moneda al escanearla;
 - filtros **Todos / Spot / Futuros / No repetidas** y orden por subida, bajada,
   moneda u orden del escaneo (las monedas con estrella van siempre primero);
 - al pulsar una moneda se abre su gráfico (1D por defecto) con una línea en el
   precio del seguimiento y una flecha en la vela de ese día;
 - **Borrar** quita un día.
+
+### Indicador de giro
+
+Una **puntuación de 0 a 100** de un posible cambio de tendencia al alza, que aparece en
+cada tarjeta del escáner (**Giro 72**), en el gráfico ampliado (con cada parte) y en la
+columna **Giro** del seguimiento. El orden **Mayor puntuación de giro** pone primero las
+más altas: verde desde 70, azul de 55 a 69. Solo usa velas **ya cerradas** al escanear
+(la que se está formando no cuenta), así que se puede calcular igual para los días
+pasados y comparar con lo que pasó después. Cada parte va de 0 (en contra) a 100 (a favor):
+
+| Parte | Qué mira |
+| --- | --- |
+| Estructura | cierre sobre la MA25, MA7 subiendo y pendiente de la MA25 |
+| Volumen | volumen de las 3 últimas velas frente a las 20 anteriores |
+| Velas verdes | parte del volumen de las 10 últimas velas que fue en velas alcistas |
+| OBV | saldo de volumen de las 20 últimas velas |
+| Flujo comprador | compras a mercado (*taker*) sobre el volumen total, y si aumentan |
+| Momento | RSI(14) en zona de giro (45–65) y subiendo; histograma del MACD girando al alza |
+| Confirmación | en otra temporalidad (1D, o 4h si escaneas en 1D): cierre y MA7 sobre la MA25 |
+| Futuros | solo futuros: interés abierto y precio en 24 h, y la financiación |
+| BTC | BTC en la misma temporalidad: cierre y MA7 sobre la MA25 |
+
+La puntuación es la media ponderada de las partes que tienen datos. **Seguimiento →
+Indicador de giro → Analizar historial** la calcula para cada moneda del seguimiento tal
+como estaba al escanearla y la compara con lo que pasó en los **7 días siguientes**: si
+llegó a **+20 %** sobre el precio del seguimiento sin caer antes un **−10 %** (con velas de
+15 minutos; si las dos cosas pasan en la misma vela, cuenta como caída), y si llegó a
+**+50 %** («Rumbo al 50»). Muestra qué porcentaje lo logró por tramos de puntuación
+(70–100, 55–69, 40–54, 0–39), cuánto separa cada parte (con la parte a favor frente a en
+contra; hacen falta 15 entradas de cada lado) y propone pesos: **Aplicar pesos
+propuestos** los usa en adelante (también en GitHub, en `docs/seguimiento/giro.json`) y
+**Volver a los pesos por defecto** deshace el cambio. Los pesos propuestos salen de esas
+mismas entradas: con pocas, los porcentajes cambian mucho. El análisis se guarda en el
+navegador; después solo se analizan las monedas nuevas y las que aún esperan sus 7 días.
+Binance guarda el interés abierto de los últimos 30 días: las monedas más antiguas se
+analizan sin esa parte.
+
+**Libro de órdenes.** Cada escaneo con **Guardar en seguimiento** lee tres veces, con unos
+segundos entre lecturas, las 100 mejores órdenes de compra y de venta de cada moneda y
+guarda un resumen con el seguimiento: diferencial, USDT en órdenes a ±1, 2 y 5 % del precio,
+hasta dónde llegan y la orden más grande de cada lado (el «muro»), con su distancia, su
+tamaño frente a la mediana y en cuántas lecturas seguía ahí. Por ahora no entra en la
+puntuación: cuando haya bastantes días se podrá medir igual que las demás partes.
 
 **Dónde se guarda.** Siempre en el navegador donde escaneas. Para tenerlo también
 en el repositorio, y verlo igual en el móvil y en el ordenador, pulsa **Guardar
@@ -113,7 +158,8 @@ al publicar la página (en otros dispositivos aparece en un minuto). Lo que
 escaneas sin conexión con GitHub se sube al conectarlo.
 
 **Cuánto dura.** En GitHub, para siempre: los archivos se quedan en el repositorio
-hasta que los borres (cada día ocupa unos 15 KB, unos 5 MB al año). Solo en el
+hasta que los borres (cada moneda ocupa alrededor de 1 KB con su puntuación de giro y su
+libro de órdenes: un día de 30 monedas, unos 30 KB). Solo en el
 navegador, hasta que borres los datos del sitio; si se llena (unos 2,5 MB), olvida
 primero los días más antiguos que ya están en GitHub. La clave de GitHub caduca en
 la fecha que elegiste al crearla: cuando pase, la web avisa de que no puede subir y
@@ -312,6 +358,7 @@ npx playwright test
 ```
 
 GitHub las corre en cada cambio (workflow `Scanner`, job `web`). Prueban el escáner, el
-seguimiento, «Rumbo al 50», los filtros, las estrellas, el guardado en GitHub y que el
-escaneo no se cuelgue con una red inestable. Usan `docs/index.html`: tras cambiar la
+seguimiento, «Rumbo al 50», los filtros, las estrellas, el indicador de giro y su análisis,
+el libro de órdenes, el guardado en GitHub y que el escaneo no se cuelgue con una red
+inestable. Usan `docs/index.html`: tras cambiar la
 plantilla, regenérala con `python -m momento_b.web docs`.

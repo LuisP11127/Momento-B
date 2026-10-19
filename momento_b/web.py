@@ -24,7 +24,11 @@ from .scanner import is_tokenized_stock
 
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 COIN_FIELDS = ("mercado", "simbolo", "base", "quote", "precio", "hora", "intervalo")
+# Indicador de giro al escanear (solo los escaneos desde que existe). El libro de órdenes («libro») se queda en los
+# archivos de cada día pero no se publica: la web todavía no lo usa y haría más pesado seguimiento.json.
+OPTIONAL_COIN_FIELDS = ("giro",)
 STARS_FILE = "estrellas.json"  # monedas con estrella, en la misma carpeta que los días de seguimiento
+GIRO_FILE = "giro.json"  # pesos del indicador de giro
 # «AAAA-MM-DD|mercado:SÍMBOLO» (la estrella de un día); sin día es el formato antiguo, que la web convierte.
 STAR_KEY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2}\|)?[a-z]+:\S+$")
 ICON_PATH = Path(__file__).with_name("icono.png")
@@ -37,7 +41,7 @@ def collect_tracking(folder: Path) -> list[dict]:
     """
     days = {}
     for path in sorted(Path(folder).glob("*.json")):
-        if path.name == STARS_FILE:
+        if path.name in (STARS_FILE, GIRO_FILE):
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -53,11 +57,13 @@ def collect_tracking(folder: Path) -> list[dict]:
         if not fecha:
             print(f"Aviso: {path} no indica la fecha; se ignora.")
             continue
-        coins = [
-            {field: coin.get(field) for field in COIN_FIELDS}
-            for coin in data["monedas"]
-            if isinstance(coin, dict) and coin.get("mercado") and coin.get("simbolo")
-        ]
+        coins = []
+        for coin in data["monedas"]:
+            if not (isinstance(coin, dict) and coin.get("mercado") and coin.get("simbolo")):
+                continue
+            entry = {field: coin.get(field) for field in COIN_FIELDS}
+            entry.update({field: coin[field] for field in OPTIONAL_COIN_FIELDS if isinstance(coin.get(field), dict)})
+            coins.append(entry)
         days[fecha] = {"fecha": fecha, "monedas": coins}
     return [days[fecha] for fecha in sorted(days, reverse=True)]
 
@@ -83,6 +89,33 @@ def collect_stars(folder: Path) -> dict:
         key: {"activa": value["activa"], "hora": str(value.get("hora") or "")}
         for key, value in sorted(stars.items())
         if STAR_KEY_RE.match(key) and isinstance(value, dict) and isinstance(value.get("activa"), bool)
+    }
+
+
+def collect_giro(folder: Path) -> dict:
+    """Pesos del indicador de giro que la web guarda en giro.json: {"pesos": {"volumen": 1.5, ...}, "hora": "..."}.
+
+    Sin archivo (o con uno no válido) la web usa los pesos por defecto.
+    """
+    path = Path(folder) / GIRO_FILE
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        print(f"Aviso: {path} no es un JSON válido; se ignora.")
+        return {}
+    weights = data.get("pesos") if isinstance(data, dict) else None
+    if not isinstance(weights, dict):
+        print(f"Aviso: {path} no tiene el formato de los pesos del indicador de giro; se ignora.")
+        return {}
+    return {
+        "pesos": {
+            key: value
+            for key, value in weights.items()
+            if isinstance(value, (int, float)) and not isinstance(value, bool) and value >= 0
+        },
+        "hora": str(data.get("hora") or ""),
     }
 
 
@@ -115,7 +148,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.seguimiento:
         days = collect_tracking(Path(args.seguimiento))
         data = {"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"), "dias": days,
-                "estrellas": collect_stars(Path(args.seguimiento))}
+                "estrellas": collect_stars(Path(args.seguimiento)), "giro": collect_giro(Path(args.seguimiento))}
         (out / "seguimiento.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         print(f"{len(days)} días de seguimiento en {out / 'seguimiento.json'}")
     if args.bstocks:

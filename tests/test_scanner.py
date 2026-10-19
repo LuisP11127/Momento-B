@@ -551,6 +551,7 @@ def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
     (tmp_path / "otro.json").write_text(json.dumps({"monedas": []}), encoding="utf-8")  # sin fecha
     (tmp_path / "README.md").write_text("no es un día", encoding="utf-8")
     (tmp_path / "estrellas.json").write_text(json.dumps({"estrellas": {}}), encoding="utf-8")  # no es un día
+    (tmp_path / "giro.json").write_text(json.dumps({"pesos": {}}), encoding="utf-8")  # tampoco
 
     days = web.collect_tracking(tmp_path)
 
@@ -559,8 +560,39 @@ def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
     assert len(days[0]["monedas"]) == 1
     out = capsys.readouterr().out
     assert "roto.json" in out and "otro.json" in out
-    assert "estrellas.json" not in out
+    assert "estrellas.json" not in out and "giro.json" not in out
     assert web.collect_tracking(tmp_path / "no-existe") == []
+
+
+def test_collect_tracking_keeps_giro_but_not_the_order_book(tmp_path):
+    from momento_b import web
+
+    giro = {"v": 1, "partes": {"estructura": 0.8, "flujo": 0.4}, "puntos": 62}
+    coins = [
+        {"mercado": "spot", "simbolo": "AAAUSDT", "precio": 1, "hora": "x", "intervalo": "1d", "giro": giro,
+         "libro": {"lecturas": 3, "spread": 0.1}},
+        {"mercado": "spot", "simbolo": "BBBUSDT", "precio": 2, "hora": "x", "intervalo": "1d", "giro": "no válido"},
+    ]
+    (tmp_path / "2026-10-19.json").write_text(json.dumps({"fecha": "2026-10-19", "monedas": coins}), encoding="utf-8")
+
+    first, second = web.collect_tracking(tmp_path)[0]["monedas"]
+
+    assert first["giro"] == giro
+    assert "libro" not in first  # se queda en el archivo del día, no se publica
+    assert "giro" not in second
+
+
+def test_collect_giro_keeps_valid_weights(tmp_path, capsys):
+    from momento_b import web
+
+    assert web.collect_giro(tmp_path) == {}  # sin archivo: la web usa los pesos por defecto
+    (tmp_path / "giro.json").write_text(json.dumps({"pesos": {
+        "estructura": 2, "volumen": 0.5, "flujo": 0, "obv": -1, "btc": "mucho", "momento": True,
+    }, "hora": "2026-10-19T15:00:00.000Z", "otro": 1}), encoding="utf-8")
+    assert web.collect_giro(tmp_path) == {"pesos": {"estructura": 2, "volumen": 0.5, "flujo": 0}, "hora": "2026-10-19T15:00:00.000Z"}
+    (tmp_path / "giro.json").write_text("[]", encoding="utf-8")
+    assert web.collect_giro(tmp_path) == {}
+    assert "giro.json" in capsys.readouterr().out
 
 
 def test_collect_stars_keeps_valid_entries(tmp_path, capsys):
@@ -597,11 +629,13 @@ def test_web_cli_writes_tracking_aggregate(tmp_path):
         encoding="utf-8")
     (folder / "estrellas.json").write_text(json.dumps({"estrellas": {
         "2026-10-02|futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}}), encoding="utf-8")
+    (folder / "giro.json").write_text(json.dumps({"pesos": {"volumen": 2}, "hora": "2026-10-19T15:00:00.000Z"}), encoding="utf-8")
     out = tmp_path / "site"
     assert web.main([str(out), "--seguimiento", str(folder)]) == 0
     data = json.loads((out / "seguimiento.json").read_text(encoding="utf-8"))
     assert [d["fecha"] for d in data["dias"]] == ["2026-10-02"]
     assert data["estrellas"] == {"2026-10-02|futures:BBBUSDT": {"activa": True, "hora": "2026-10-06T15:00:00.000Z"}}
+    assert data["giro"] == {"pesos": {"volumen": 2}, "hora": "2026-10-19T15:00:00.000Z"}
     assert (out / "index.html").exists()
     assert (out / "icono.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     # Sin --seguimiento no se escribe (docs/ no debe llevar una copia que se quede vieja)
