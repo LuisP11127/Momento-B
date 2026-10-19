@@ -245,7 +245,8 @@ test('sección «Llegaron a +50 %»: todas las que llegaron, primero las de estr
   const fake = new Fake({
     remote: {
       dias: [
-        { fecha: '2026-10-05', monedas: [coin('HITUSDT', 10, new Date(d5).toISOString()), coin('NOUSDT', 10, new Date(d5).toISOString())] },
+        // AAA está en los dos días y llega a +50 % desde los dos: sale una vez, con el día más antiguo.
+        { fecha: '2026-10-05', monedas: [coin('HITUSDT', 10, new Date(d5).toISOString()), coin('NOUSDT', 10, new Date(d5).toISOString()), coin('AAAUSDT', 10, new Date(d5).toISOString())] },
         { fecha: '2026-10-03', monedas: [coin('AAAUSDT', 10, new Date(d3).toISOString()), coin('GNSUSDT', 10, new Date(d3).toISOString())] },
       ],
       estrellas: { '2026-10-03|spot:GNSUSDT': { activa: true, hora: new Date(d3).toISOString() } },
@@ -270,8 +271,11 @@ test('sección «Llegaron a +50 %»: todas las que llegaron, primero las de estr
   await expect(page.locator('.day-toggle')).toHaveCount(0);  // los días siguen ahí, en «Por día»
   await expect(page.locator('#track-sort-label')).toBeHidden();
   const rows = () => page.$$eval('.day.hits tbody tr', (trs) => trs.map((tr) => (tr.querySelector('.star').getAttribute('aria-pressed') === 'true' ? '★' : '☆') +
-    tr.querySelector('.coin').textContent + ' ' + tr.querySelector('.c-day').textContent + ' ' + tr.querySelector('.c-r50').firstChild.textContent));
+    tr.querySelector('.coin').textContent + ' ' + tr.querySelector('.c-day').firstChild.textContent + ' ' + tr.querySelector('.c-r50').firstChild.textContent));
   await expect.poll(rows).toEqual(['★GNS/USDT 3 oct 1 día', '☆AAA/USDT 3 oct 4 días', '☆HIT/USDT 5 oct 2 días']);
+  const more = hits.locator('tbody tr', { hasText: 'AAA' }).locator('.more-days');
+  await expect(more).toHaveText('+1');  // también llegó desde el seguimiento del 5
+  await expect(more).toHaveAttribute('title', /5 oct/);
   await expect(hits.locator('.day-stats')).toContainText('3 de 4 monedas del seguimiento');
   await expect(hits.locator('.day-stats')).toContainText('★ 1 con estrella');
   await expect(hits.locator('.day-stats')).not.toContainText('Revisando');
@@ -299,6 +303,14 @@ test('sección «Llegaron a +50 %»: todas las que llegaron, primero las de estr
   await page.locator('#track-views button', { hasText: 'Por día' }).click();
   await expect(page.locator('.day h2')).toHaveText(['Seguimiento 5 de octubre', 'Seguimiento 3 de octubre']);
   await expect(page.locator('#track-sort-label')).toBeVisible();
+
+  // Con estrella en otro día, esa fila sale también aunque la moneda se repita.
+  await page.locator('.day[data-fecha="2026-10-05"] tbody tr', { hasText: 'AAA' }).locator('.star').click();
+  await page.locator('#track-views button', { hasText: 'Llegaron' }).click();
+  await expect.poll(rows).toEqual(['★AAA/USDT 3 oct 4 días', '★AAA/USDT 5 oct 2 días', '★GNS/USDT 3 oct 1 día', '☆HIT/USDT 5 oct 2 días']);
+  await expect(page.locator('.day.hits .day-stats')).toContainText('3 de 4 monedas del seguimiento');  // sigue contando monedas, no filas
+  await expect(page.locator('#track-views button', { hasText: 'Llegaron' }).locator('.count')).toHaveText('3');
+  await page.locator('#track-views button', { hasText: 'Por día' }).click();
 
   await page.setViewportSize({ width: 390, height: 800 });
   await page.locator('#track-views button', { hasText: 'Llegaron' }).click();
