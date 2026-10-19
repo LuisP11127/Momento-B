@@ -87,8 +87,9 @@ En la pestaña **Seguimiento** de la web:
 - **Por día / Llegaron a +50 %**: la segunda vista junta en una sola lista las monedas de
   todos los días que llegaron a +50 % (sin quitar nada de los días), con el día del
   seguimiento de cada una: primero las que tienen estrella y después de la que llegó más
-  recientemente a la más antigua. Si una moneda llegó en varios días de seguimiento, sale
-  una vez por día, cada una con su precio. La primera vez revisa el máximo de todas las
+  recientemente a la más antigua. Cada moneda sale una sola vez, con el día de seguimiento
+  más antiguo en que llegó (y «+N» si llegó también desde otros N días); si le pusiste
+  estrella en otro día, esa fila sale también. La primera vez revisa el máximo de todas las
   monedas (se ve el progreso); después queda guardado en el navegador y las que aún no
   llegaron se vuelven a mirar cada 15 minutos;
 - filtros **Todos / Spot / Futuros / No repetidas** y orden por subida, bajada,

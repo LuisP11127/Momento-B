@@ -181,6 +181,7 @@ body.tracking .scan-only { display: none !important; }
 .hits-title { margin: 0; font: 600 21px/1.15 var(--font-display); letter-spacing: 0.01em; }
 .day-stats b.star-count { color: var(--star); }
 .coins .c-day { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.coins .c-day .more-days { margin-left: 4px; font-size: 11.5px; color: var(--accent); }
 .day-stats { display: flex; flex-wrap: wrap; gap: 3px 14px; font-size: 13px; color: var(--muted); }
 .day-stats b { font: 500 13px var(--font-mono); color: var(--fg); font-variant-numeric: tabular-nums; }
 .day-stats b.up { color: var(--up); }
@@ -2296,7 +2297,10 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       const tr = h("tr", { tabindex: "0", title: "Ver el gráfico de " + c.simbolo },
         h("td", { class: "c-coin" }, starButton(c, c.fecha), h("span", { class: "coin" }, c.base || c.simbolo, h("small", { text: c.quote ? "/" + c.quote : "" })),
           h("span", { class: "badge", text: MARKET_NAMES[c.mercado] || c.mercado })),
-        withDay ? h("td", { class: "c-day", "data-label": "Seguimiento", text: shortDate(c.fecha) }) : null,
+        withDay ? h("td", { class: "c-day", "data-label": "Seguimiento" }, shortDate(c.fecha), c.otros && c.otros.length
+          ? h("small", { class: "more-days", text: " +" + c.otros.length,
+              title: "También llegó a +50 % desde el seguimiento del " + c.otros.sort().map(shortDate).join(", ") })
+          : null) : null,
         h("td", { class: "r num c-then", "data-label": shortDate(c.fecha), text: fmtPrice(c.precio) }),
         h("td", { class: "r num c-now", "data-label": "ahora", text: c.ahora == null ? "—" : fmtPrice(c.ahora) }),
         rangeCell(c.fecha, c, "low"),
@@ -2339,35 +2343,43 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     return card;
   }
   // Monedas de todos los días que llegaron a +50 % (con el filtro de mercado), y cuántas faltan por revisar.
+  // Cada moneda una sola vez: la del día de seguimiento más antiguo en que llegó (con cuántos otros días llegó);
+  // las que tienen estrella en otro día salen también, aunque se repitan.
   function hitRows(days) {
-    const rows = [];
+    const hits = [], coins = new Set();
+    const keyOf = (c) => (track.market === "unicas" ? coinOf(c) : coinKey(c));  // «No repetidas»: también entre mercados
     let total = 0, checked = 0;
     for (const day of days) {
       for (const c of withPrices(day)) {
         total++;
+        coins.add(keyOf(c));
         if (ranges[rangeKey(day.fecha, c)]) checked++;
         const rumbo = rumboOf(day.fecha, c, c.ahora);
-        if (rumbo) rows.push(Object.assign(c, { rumbo }));
+        if (rumbo) hits.push(Object.assign(c, { rumbo, otros: [] }));
       }
     }
+    const first = new Map();
+    for (const c of hits) { const o = first.get(keyOf(c)); if (!o || c.fecha < o.fecha) first.set(keyOf(c), c); }
+    for (const c of hits) { const o = first.get(keyOf(c)); if (o !== c) o.otros.push(c.fecha); }
+    const rows = [...first.values(), ...hits.filter((c) => c.estrella && first.get(keyOf(c)) !== c)];
     // Primero las que tienen estrella; después, de la que llegó más recientemente a la más antigua.
     rows.sort((a, b) => (b.estrella - a.estrella) || (b.rumbo.at - a.rumbo.at));
-    return { rows, total, checked };
+    return { rows, firsts: [...first.values()], coins: coins.size, total, checked };
   }
   const HITS_TTL = 15 * 60000;  // en la sección de +50 % basta con mirar cada 15 minutos las que aún no llegaron
   function hitsSection(days) {
     for (const day of days) wantRanges(day.fecha, day.monedas, { ttl: HITS_TTL, skipHits: true });
-    const { rows, total, checked } = hitRows(days);
-    const avg = rows.length ? rows.reduce((sum, c) => sum + c.rumbo.days, 0) / rows.length : 0;
+    const { rows, firsts, coins, total, checked } = hitRows(days);
+    const avg = firsts.length ? firsts.reduce((sum, c) => sum + c.rumbo.days, 0) / firsts.length : 0;
     const starred = rows.filter((c) => c.estrella).length, pending = total - checked;
     const card = h("article", { class: "day hits" },
       h("header", { class: "day-head" },
         h("h2", { class: "hits-title", text: "Llegaron a +50 %" }),
         h("div", { class: "day-stats" },
-          h("span", null, h("b", { text: String(rows.length) }), " de " + total + (total === 1 ? " moneda" : " monedas") + " del seguimiento"),
-          rows.length ? h("span", null, "Tardaron de media ", h("b", { text: avg.toFixed(1).replace(".", ",") + " días" })) : null,
+          h("span", null, h("b", { text: String(firsts.length) }), " de " + coins + (coins === 1 ? " moneda" : " monedas") + " del seguimiento"),
+          firsts.length ? h("span", null, "Tardaron de media ", h("b", { text: avg.toFixed(1).replace(".", ",") + " días" })) : null,
           starred ? h("span", null, h("b", { class: "star-count", text: "★ " + starred }), " con estrella") : null,
-          pending > 0 ? h("span", { text: "Revisando " + checked + " de " + total + "…" }) : null)));
+          pending > 0 ? h("span", { text: "Revisando máximos: " + checked + " de " + total + "…" }) : null)));
     card.append(rows.length ? coinTable(rows, true) : h("p", { class: "gh-note", style: "padding: 0 14px 12px",
       text: pending > 0 ? "Revisando el máximo de cada moneda desde su escaneo…" : "Ninguna moneda del seguimiento ha llegado todavía a +50 %." }));
     return card;
@@ -2375,7 +2387,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   function renderTrackViews(days) {
     const seg = $("track-views");
     seg.textContent = "";
-    const hits = hitRows(days).rows.length;
+    const hits = hitRows(days).firsts.length;
     for (const [key, label] of [["dias", "Por día"], ["50", "Llegaron a +50 %"]]) {
       const b = h("button", { type: "button", "aria-pressed": String(key === track.view) }, label,
         key === "50" && hits ? h("span", { class: "count", text: String(hits) }) : null);
