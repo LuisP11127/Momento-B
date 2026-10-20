@@ -20,6 +20,10 @@
    "activa": true,
    "hora": "2026-10-18T17:04:36.320Z"
   },
+  "2026-10-19|futures:JCTUSDT": {
+   "activa": false,
+   "hora": "2026-10-20T22:39:28.773Z"
+  },
   "2026-10-19|futures:MAGMAUSDT": {
    "activa": true,
    "hora": "2026-10-20T22:37:07.505Z"
