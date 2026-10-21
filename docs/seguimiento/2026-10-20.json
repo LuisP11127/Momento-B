@@ -1,0 +1,525 @@
+{
+ "fecha": "2026-10-20",
+ "monedas": [
+  {
+   "mercado": "spot",
+   "simbolo": "GNSUSDT",
+   "base": "GNS",
+   "quote": "USDT",
+   "precio": 0.459,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.42,
+     "volumen": 0.61,
+     "verdes": 0.53,
+     "obv": 0.62,
+     "flujo": 0.37,
+     "momento": 0.66,
+     "confirmacion": 0.67,
+     "btc": 0
+    },
+    "puntos": 51
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.2186,
+    "compras": {
+     "bandas": {
+      "1%": 2613,
+      "2%": 24439,
+      "5%": 33201
+     },
+     "alcance": 56.94,
+     "muro": {
+      "precio": 0.451,
+      "dist": -1.42,
+      "usdt": 15244,
+      "veces": 124.17,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 2967,
+      "2%": 8168,
+      "5%": 12828
+     },
+     "alcance": 29.18,
+     "muro": {
+      "precio": 0.535,
+      "dist": 16.94,
+      "usdt": 12624,
+      "veces": 78.33,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "WLFIUSDT",
+   "base": "WLFI",
+   "quote": "USDT",
+   "precio": 0.0566,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.15,
+     "volumen": 0.59,
+     "verdes": 0.52,
+     "obv": 0.3,
+     "flujo": 0.1,
+     "momento": 0.33,
+     "confirmacion": 0.67,
+     "btc": 0
+    },
+    "puntos": 34
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.1768,
+    "compras": {
+     "bandas": {
+      "1%": 180831,
+      "2%": 270280,
+      "5%": 338074
+     },
+     "alcance": 17.95,
+     "muro": {
+      "precio": 0.0555,
+      "dist": -1.86,
+      "usdt": 40167,
+      "veces": 45.66,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 175636,
+      "2%": 246308,
+      "5%": 461963
+     },
+     "alcance": 18.13,
+     "muro": {
+      "precio": 0.0599,
+      "dist": 5.92,
+      "usdt": 88169,
+      "veces": 66.53,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AINUSDT",
+   "base": "AIN",
+   "quote": "USDT",
+   "precio": 0.03993,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.67,
+     "volumen": 0,
+     "verdes": 0.68,
+     "obv": 1,
+     "flujo": 0.26,
+     "momento": 0.61,
+     "confirmacion": 1,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 51
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0501,
+    "compras": {
+     "bandas": {
+      "1%": 27297,
+      "2%": 44163,
+      "5%": 61270
+     },
+     "alcance": 2.8,
+     "muro": {
+      "precio": 0.039,
+      "dist": -2.35,
+      "usdt": 8247,
+      "veces": 23.17,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 16887,
+      "2%": 23872,
+      "5%": 29285
+     },
+     "alcance": 3.19,
+     "muro": {
+      "precio": 0.04076,
+      "dist": 2.05,
+      "usdt": 2000,
+      "veces": 9.75,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "WLFIUSDT",
+   "base": "WLFI",
+   "quote": "USDT",
+   "precio": 0.05651,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.15,
+     "volumen": 0.57,
+     "verdes": 0.28,
+     "obv": 0.31,
+     "flujo": 0.21,
+     "momento": 0.33,
+     "confirmacion": 0.67,
+     "futuros": 0.55,
+     "btc": 0
+    },
+    "puntos": 35
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0177,
+    "compras": {
+     "bandas": {
+      "1%": 460917,
+      "2%": 921804,
+      "5%": 921804
+     },
+     "alcance": 1.76,
+     "muro": {
+      "precio": 0.05568,
+      "dist": -1.48,
+      "usdt": 51333,
+      "veces": 7.89,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 468895,
+      "2%": 823737,
+      "5%": 823737
+     },
+     "alcance": 1.78,
+     "muro": {
+      "precio": 0.05711,
+      "dist": 1.05,
+      "usdt": 45208,
+      "veces": 8.01,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "STBLUSDT",
+   "base": "STBL",
+   "quote": "USDT",
+   "precio": 0.02575,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.68,
+     "volumen": 0.74,
+     "verdes": 0,
+     "obv": 0,
+     "flujo": 0.39,
+     "momento": 0.91,
+     "confirmacion": 1,
+     "futuros": 0.55,
+     "btc": 0
+    },
+    "puntos": 50
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0776,
+    "compras": {
+     "bandas": {
+      "1%": 24777,
+      "2%": 61166,
+      "5%": 88651
+     },
+     "alcance": 4.19,
+     "muro": {
+      "precio": 0.02557,
+      "dist": -0.78,
+      "usdt": 7869,
+      "veces": 19.51,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 20909,
+      "2%": 42592,
+      "5%": 69162
+     },
+     "alcance": 4.42,
+     "muro": {
+      "precio": 0.02676,
+      "dist": 3.84,
+      "usdt": 5357,
+      "veces": 12.68,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "BLUAIUSDT",
+   "base": "BLUAI",
+   "quote": "USDT",
+   "precio": 0.009145,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.67,
+     "volumen": 0.17,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.31,
+     "momento": 0.88,
+     "confirmacion": 1,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 60
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0692,
+    "compras": {
+     "bandas": {
+      "1%": 14437,
+      "2%": 27679,
+      "5%": 27679
+     },
+     "alcance": 1.54,
+     "muro": {
+      "precio": 0.009054,
+      "dist": -1.05,
+      "usdt": 6237,
+      "veces": 49.64,
+      "lecturas": 1
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 11823,
+      "2%": 17291,
+      "5%": 17291
+     },
+     "alcance": 1.64,
+     "muro": {
+      "precio": 0.0092,
+      "dist": 0.54,
+      "usdt": 1478,
+      "veces": 24.7,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ONUSDT",
+   "base": "ON",
+   "quote": "USDT",
+   "precio": 0.1239,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.4,
+     "volumen": 0,
+     "verdes": 0.91,
+     "obv": 1,
+     "flujo": 0.31,
+     "momento": 0.89,
+     "confirmacion": 0.67,
+     "futuros": 0.63,
+     "btc": 0
+    },
+    "puntos": 55
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0808,
+    "compras": {
+     "bandas": {
+      "1%": 26193,
+      "2%": 71761,
+      "5%": 199784
+     },
+     "alcance": 8.36,
+     "muro": {
+      "precio": 0.1205,
+      "dist": -2.63,
+      "usdt": 20773,
+      "veces": 12.87,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 26935,
+      "2%": 58204,
+      "5%": 127992
+     },
+     "alcance": 8.93,
+     "muro": {
+      "precio": 0.1334,
+      "dist": 7.8,
+      "usdt": 22594,
+      "veces": 18.25,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "COLLECTUSDT",
+   "base": "COLLECT",
+   "quote": "USDT",
+   "precio": 0.02545,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 1,
+     "volumen": 0.18,
+     "verdes": 0.62,
+     "obv": 1,
+     "flujo": 0.32,
+     "momento": 1,
+     "confirmacion": 1,
+     "futuros": 0.55,
+     "btc": 0
+    },
+    "puntos": 65
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0786,
+    "compras": {
+     "bandas": {
+      "1%": 18663,
+      "2%": 69308,
+      "5%": 125079
+     },
+     "alcance": 4.06,
+     "muro": {
+      "precio": 0.02454,
+      "dist": -3.65,
+      "usdt": 9177,
+      "veces": 15.17,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 19945,
+      "2%": 65273,
+      "5%": 106467
+     },
+     "alcance": 4.28,
+     "muro": {
+      "precio": 0.02584,
+      "dist": 1.45,
+      "usdt": 6278,
+      "veces": 14.03,
+      "lecturas": 2
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "GWEIUSDT",
+   "base": "GWEI",
+   "quote": "USDT",
+   "precio": 0.02152,
+   "hora": "2026-10-21T16:13:27.561Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.73,
+     "volumen": 1,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.33,
+     "momento": 0.92,
+     "confirmacion": 0.33,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 64
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0465,
+    "compras": {
+     "bandas": {
+      "1%": 81762,
+      "2%": 193600,
+      "5%": 332406
+     },
+     "alcance": 4.62,
+     "muro": {
+      "precio": 0.02111,
+      "dist": -1.93,
+      "usdt": 11379,
+      "veces": 4.05,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 70214,
+      "2%": 118261,
+      "5%": 202191
+     },
+     "alcance": 5.46,
+     "muro": {
+      "precio": 0.02225,
+      "dist": 3.37,
+      "usdt": 10063,
+      "veces": 7.87,
+      "lecturas": 3
+     }
+    }
+   }
+  }
+ ]
+}
