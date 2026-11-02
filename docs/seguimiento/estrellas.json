@@ -32,6 +32,26 @@
    "activa": true,
    "hora": "2026-10-21T16:15:46.101Z"
   },
+  "2026-11-01|futures:GUAUSDT": {
+   "activa": true,
+   "hora": "2026-11-02T18:10:14.004Z"
+  },
+  "2026-11-01|futures:HANAUSDT": {
+   "activa": true,
+   "hora": "2026-11-02T18:10:31.774Z"
+  },
+  "2026-11-01|futures:MUSDT": {
+   "activa": true,
+   "hora": "2026-11-02T18:10:04.493Z"
+  },
+  "2026-11-01|futures:TAGUSDT": {
+   "activa": true,
+   "hora": "2026-11-02T18:09:30.512Z"
+  },
+  "2026-11-01|futures:XANUSDT": {
+   "activa": true,
+   "hora": "2026-11-02T18:10:19.125Z"
+  },
   "2026-11-01|futures:XNYUSDT": {
    "activa": true,
    "hora": "2026-11-02T18:09:21.435Z"
