@@ -31,6 +31,10 @@
   "2026-10-20|futures:BLUAIUSDT": {
    "activa": true,
    "hora": "2026-10-21T16:15:46.101Z"
+  },
+  "2026-11-01|futures:XNYUSDT": {
+   "activa": true,
+   "hora": "2026-11-02T18:09:21.435Z"
   }
  }
 }
