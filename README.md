@@ -257,8 +257,9 @@ y se abre en el navegador. Es un solo archivo que puedes guardar o compartir.
     y «ver todo el historial» las descarga hasta el inicio de la moneda (como mucho 40
     páginas). Las tarjetas usan las velas del escaneo, porque solo muestran las últimas;
   - al pasar el ratón (o el dedo) se ven apertura, máximo, mínimo, cierre, la **variación de la
-    vela** (de la apertura al cierre, en verde o rojo) y el valor de cada media en esa vela; sin
-    el ratón encima, los de la última vela;
+    vela** (de la apertura al cierre, en verde o rojo), el valor de cada media y el volumen con
+    sus medias en esa vela; sin el ratón encima, los de la última vela;
+  - barras de volumen abajo, con su **MA(5)** (amarilla) y su **MA(25)** (rosa);
   - selector de temporalidad propio, que también descarga velas nuevas al cambiar (un punto
     marca dónde también se cumple la condición);
   - `←` / `→` pasan a la moneda anterior o siguiente y `Esc` cierra;

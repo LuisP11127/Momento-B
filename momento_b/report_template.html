@@ -469,6 +469,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
   const $ = (id) => document.getElementById(id);
   const MARKET_NAMES = { spot: "Spot", futures: "Futuros" };
   const SIZES = { s: 90, m: 120, l: 160 };  // velas visibles en cada mini-gráfico
+  const VOL_MAS = [5, 25];  // medias de las barras de volumen del gráfico ampliado
   const state = { data: null, items: [], view: [], market: "todos", sort: "distancia", q: "", size: "m", current: -1, tf: null, vtf: null, freshSince: 0, trackSaved: null,
     filters: { cerradas: false, cruce: false, cruceN: 5, acum: false, acumPct: 4, acumDias: 5 } };
   const minis = new Map();  // elemento .mini -> entrada de gráfico
@@ -569,7 +570,9 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const raw = periods.map((p) => sma(closes, p));
     const mas = raw.map((arr) => arr.flatMap((v, i) => (v == null ? [] : [{ time: candles[i].time, value: v }])));
     const volume = rows.map((k, i) => ({ time: candles[i].time, value: k[5], up: k[4] >= k[1] }));
-    return (it._sd[tf] = { candles, raw, mas, volume });
+    const volRaw = VOL_MAS.map((p) => sma(rows.map((k) => k[5]), p));
+    const volMas = volRaw.map((arr) => arr.flatMap((v, i) => (v == null ? [] : [{ time: candles[i].time, value: v }])));
+    return (it._sd[tf] = { candles, raw, mas, volume, volRaw, volMas });
   }
   // ¿Se cumple MA rápida > media y rápida < lenta en la última vela de esa temporalidad? (null = sin datos)
   function meets(it, tf) {
@@ -1070,6 +1073,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
       const alpha = (c) => c + (c.startsWith("#") && c.length === 7 ? "66" : "");
       entry.volume.setData(seriesData(entry.item, entry.tf).volume.map((v) => ({ time: v.time, value: v.value, color: alpha(v.up ? t.up : t.down) })));
     }
+    entry.volMas.forEach((s, i) => s.applyOptions({ color: t.ma[i] }));  // MA(5) amarilla y MA(25) rosa, como las del precio
     if (entry.entryLine) entry.entryLine.applyOptions({ color: t.accent });
     if (entry.band) {
       const tint = t.accent.startsWith("#") && t.accent.length === 7 ? t.accent + "24" : t.accent;
@@ -1098,12 +1102,15 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     }
     const candles = chart.addCandlestickSeries({ priceFormat });
     const mas = sd.mas.map(() => chart.addLineSeries({ lineWidth: isBig ? 2 : 1, priceLineVisible: false, lastValueVisible: isBig, crosshairMarkerVisible: false, priceFormat }));
-    let volume = null;
+    let volume = null, volMas = [];
     if (isBig) {
       volume = chart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "vol", lastValueVisible: false, priceLineVisible: false });
       chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+      // Medias del volumen, sobre las barras y en su misma escala.
+      volMas = VOL_MAS.map(() => chart.addLineSeries({ priceScaleId: "vol", lineWidth: 1, priceLineVisible: false, lastValueVisible: false,
+        crosshairMarkerVisible: false, priceFormat: { type: "volume" } }));
     }
-    const entry = { chart, candles, mas, volume, band, item: it, isBig, tf };
+    const entry = { chart, candles, mas, volume, volMas, band, item: it, isBig, tf };
     if (isBig && it._seguimiento) markTracking(entry, t);
     fillSeries(entry);
     const n = sd.candles.length;
@@ -1123,6 +1130,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const it = entry.item, tf = entry.tf, sd = seriesData(it, tf);
     entry.candles.setData(sd.candles);
     entry.mas.forEach((s, i) => s.setData(sd.mas[i]));
+    entry.volMas.forEach((s, i) => s.setData(sd.volMas[i]));
     if (entry.band) entry.band.times = bandTimes(it, tf);
     if (entry.entryLine) {  // flecha en la vela del día del seguimiento
       const sg = it._seguimiento, rows = rowsFor(it, tf), ms = Date.parse(sg.hora);
@@ -1193,6 +1201,9 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
           h("b", { text: "Var. " }), h("span", { class: pct > 0 ? "up" : pct < 0 ? "down" : "", text: fmtPct(pct) })));
       }
       $("v-legend").prepend(ohlc);
+      const vol = h("span", { class: "vol-legend", title: "Volumen de la vela y sus medias de " + VOL_MAS.join(" y ") + " velas" }, h("b", { text: "Vol " }), fmtVol(sd.volume[idx].value));
+      VOL_MAS.forEach((p, i) => vol.append("  ", h("b", { class: ["c-fast", "c-mid"][i], text: "MA(" + p + ") " }), fmtVol(sd.volRaw[i][idx])));
+      $("v-legend").append(vol);
     }
   }
   function openViewer(index) {

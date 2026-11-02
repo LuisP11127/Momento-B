@@ -1,6 +1,6 @@
 // Escáner: resultados, mercados, gráficos, visor y estrellas.
 const { test, expect } = require('@playwright/test');
-const { Fake, URL, cards, scan } = require('./fake');
+const { Fake, URL, candles, closesOf, cards, scan } = require('./fake');
 
 test('escanea spot y futuros y deja fuera las acciones tokenizadas de spot', async ({ page, context }) => {
   const fake = new Fake();
@@ -126,4 +126,22 @@ test('el gráfico ampliado carga el máximo de velas y, hacia atrás, todo el hi
   }
   await expect(page.locator('#v-hist')).toContainText('3000 velas');
   await expect(page.locator('#big canvas').first()).toBeVisible();
+});
+
+test('las barras de volumen del gráfico ampliado llevan su MA(5) y su MA(25)', async ({ page, context }) => {
+  // Velas diarias de AAA con volumen 1, 2, 3…: en la vela j el volumen es j + 1, la MA(5) j − 1 y la MA(25) j − 11.
+  const rows = candles(closesOf('rebound', 299), '1d').map((k, i) => { const r = [...k]; r[5] = String(i + 1); return r; });
+  const fake = new Fake({ custom: { 'spot:AAAUSDT:1d': rows } });
+  await fake.install(context);
+  await page.goto(URL);
+  await scan(page, 'spot');
+  await page.locator('#grid .card').first().click();
+  await expect(page.locator('#big canvas').first()).toBeVisible();
+  await page.mouse.move(5, 5);
+  await expect(page.locator('#v-legend .vol-legend')).toHaveText('Vol 299 MA(5) 297 MA(25) 287');  // sin el ratón, la última vela
+  const box = await page.locator('#big').boundingBox();
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);  // al pasar el ratón, las de esa vela
+  await expect(page.locator('#v-legend .vol-legend')).not.toHaveText(/Vol 299 /);
+  const [vol, ma5, ma25] = (await page.locator('#v-legend .vol-legend').textContent()).match(/\d+/g).filter((_, i) => i !== 1 && i !== 3).map(Number);
+  expect([ma5, ma25]).toEqual([vol - 2, vol - 12]);
 });
