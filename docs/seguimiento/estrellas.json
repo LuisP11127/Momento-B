@@ -59,6 +59,10 @@
   "2026-11-01|futures:XNYUSDT": {
    "activa": true,
    "hora": "2026-11-02T18:09:21.435Z"
+  },
+  "2026-11-04|futures:NAORISUSDT": {
+   "activa": true,
+   "hora": "2026-11-05T13:53:53.292Z"
   }
  }
 }
