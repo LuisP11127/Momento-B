@@ -63,6 +63,10 @@
   "2026-11-04|futures:NAORISUSDT": {
    "activa": true,
    "hora": "2026-11-05T13:53:53.292Z"
+  },
+  "2026-11-06|spot:TURTLEUSDT": {
+   "activa": true,
+   "hora": "2026-11-11T04:56:27.017Z"
   }
  }
 }
