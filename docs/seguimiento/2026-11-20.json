@@ -1,0 +1,1448 @@
+{
+ "fecha": "2026-11-20",
+ "monedas": [
+  {
+   "mercado": "spot",
+   "simbolo": "RAREUSDT",
+   "base": "RARE",
+   "quote": "USDT",
+   "precio": 0.01353,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.86,
+     "volumen": 0.9,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.72,
+     "momento": 0.84,
+     "confirmacion": 1,
+     "btc": 0
+    },
+    "puntos": 84
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.1967,
+    "compras": {
+     "bandas": {
+      "1%": 18772,
+      "2%": 27695,
+      "5%": 37765
+     },
+     "alcance": 12.94,
+     "muro": {
+      "precio": 0.012,
+      "dist": -11.47,
+      "usdt": 3426,
+      "veces": 20.15,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 5688,
+      "2%": 9750,
+      "5%": 11362
+     },
+     "alcance": 20.27,
+     "muro": {
+      "precio": 0.015,
+      "dist": 10.66,
+      "usdt": 15547,
+      "veces": 158.27,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "LUNCUSDT",
+   "base": "LUNC",
+   "quote": "USDT",
+   "precio": 0.00004028,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.76,
+     "volumen": 1,
+     "verdes": 0.91,
+     "obv": 1,
+     "flujo": 0.57,
+     "momento": 0.92,
+     "confirmacion": 0.33,
+     "btc": 0
+    },
+    "puntos": 72
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0248,
+    "compras": {
+     "bandas": {
+      "1%": 50536,
+      "2%": 59197,
+      "5%": 94295
+     },
+     "alcance": 4.8,
+     "muro": {
+      "precio": 0.0000395,
+      "dist": -2.02,
+      "usdt": 15929,
+      "veces": 105.29,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 33658,
+      "2%": 46235,
+      "5%": 57443
+     },
+     "alcance": 5.02,
+     "muro": {
+      "precio": 0.00004049,
+      "dist": 0.43,
+      "usdt": 7247,
+      "veces": 33.12,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "HMSTRUSDT",
+   "base": "HMSTR",
+   "quote": "USDT",
+   "precio": 0.0001434,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.83,
+     "volumen": 0.99,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.3,
+     "momento": 0.81,
+     "confirmacion": 1,
+     "btc": 0
+    },
+    "puntos": 76
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.1395,
+    "compras": {
+     "bandas": {
+      "1%": 13831,
+      "2%": 16766,
+      "5%": 19362
+     },
+     "alcance": 15.78,
+     "muro": {
+      "precio": 0.00013,
+      "dist": -9.34,
+      "usdt": 9050,
+      "veces": 180.99,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 12002,
+      "2%": 13768,
+      "5%": 14529
+     },
+     "alcance": 15.41,
+     "muro": {
+      "precio": 0.0001442,
+      "dist": 0.56,
+      "usdt": 1388,
+      "veces": 45.09,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "USUALUSDT",
+   "base": "USUAL",
+   "quote": "USDT",
+   "precio": 0.0107,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.86,
+     "volumen": 0.78,
+     "verdes": 0.72,
+     "obv": 1,
+     "flujo": 0.47,
+     "momento": 0.9,
+     "confirmacion": 0.67,
+     "btc": 0
+    },
+    "puntos": 70
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0936,
+    "compras": {
+     "bandas": {
+      "1%": 25349,
+      "2%": 48628,
+      "5%": 50002
+     },
+     "alcance": 19.89,
+     "muro": {
+      "precio": 0.01059,
+      "dist": -0.89,
+      "usdt": 15333,
+      "veces": 272.5,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 23988,
+      "2%": 47460,
+      "5%": 51156
+     },
+     "alcance": 11.19,
+     "muro": {
+      "precio": 0.01077,
+      "dist": 0.8,
+      "usdt": 13815,
+      "veces": 153.89,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "GPSUSDT",
+   "base": "GPS",
+   "quote": "USDT",
+   "precio": 0.00833,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.87,
+     "volumen": 0,
+     "verdes": 0.22,
+     "obv": 0.55,
+     "flujo": 0.27,
+     "momento": 0.56,
+     "confirmacion": 0,
+     "btc": 0
+    },
+    "puntos": 33
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.2395,
+    "compras": {
+     "bandas": {
+      "1%": 14627,
+      "2%": 35482,
+      "5%": 49307
+     },
+     "alcance": 46.19,
+     "muro": {
+      "precio": 0.00818,
+      "dist": -2.04,
+      "usdt": 10457,
+      "veces": 479.84,
+      "lecturas": 2
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 13945,
+      "2%": 19689,
+      "5%": 22982
+     },
+     "alcance": 17.37,
+     "muro": {
+      "precio": 0.0095,
+      "dist": 13.77,
+      "usdt": 2827,
+      "veces": 30.18,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "FFUSDT",
+   "base": "FF",
+   "quote": "USDT",
+   "precio": 0.0997,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.85,
+     "volumen": 0.16,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.59,
+     "momento": 0.51,
+     "confirmacion": 0.33,
+     "btc": 0
+    },
+    "puntos": 59
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0602,
+    "compras": {
+     "bandas": {
+      "1%": 21199,
+      "2%": 28397,
+      "5%": 34464
+     },
+     "alcance": 9.69,
+     "muro": {
+      "precio": 0.09711,
+      "dist": -2.56,
+      "usdt": 4236,
+      "veces": 40.46,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 28366,
+      "2%": 40510,
+      "5%": 46628
+     },
+     "alcance": 4.17,
+     "muro": {
+      "precio": 0.1024,
+      "dist": 2.74,
+      "usdt": 4524,
+      "veces": 8.4,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "spot",
+   "simbolo": "BREVUSDT",
+   "base": "BREV",
+   "quote": "USDT",
+   "precio": 0.0704,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.51,
+     "volumen": 1,
+     "verdes": 0.41,
+     "obv": 0.48,
+     "flujo": 0.5,
+     "momento": 0.47,
+     "confirmacion": 0,
+     "btc": 0
+    },
+    "puntos": 45
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.2833,
+    "compras": {
+     "bandas": {
+      "1%": 13826,
+      "2%": 23207,
+      "5%": 30139
+     },
+     "alcance": 44.05,
+     "muro": {
+      "precio": 0.0701,
+      "dist": -0.85,
+      "usdt": 3421,
+      "veces": 34.28,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 18210,
+      "2%": 31423,
+      "5%": 33726
+     },
+     "alcance": 28.56,
+     "muro": {
+      "precio": 0.0853,
+      "dist": 20.65,
+      "usdt": 4330,
+      "veces": 35.98,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "1000LUNCUSDT",
+   "base": "1000LUNC",
+   "quote": "USDT",
+   "precio": 0.04033,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.76,
+     "volumen": 1,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.46,
+     "momento": 0.92,
+     "confirmacion": 0.33,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 66
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.033,
+    "compras": {
+     "bandas": {
+      "1%": 187121,
+      "2%": 428415,
+      "5%": 467758
+     },
+     "alcance": 2.47,
+     "muro": {
+      "precio": 0.03992,
+      "dist": -1.15,
+      "usdt": 50549,
+      "veces": 12.6,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 202841,
+      "2%": 344190,
+      "5%": 375425
+     },
+     "alcance": 2.57,
+     "muro": {
+      "precio": 0.04077,
+      "dist": 0.95,
+      "usdt": 48144,
+      "veces": 19.86,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "RAREUSDT",
+   "base": "RARE",
+   "quote": "USDT",
+   "precio": 0.0134,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.85,
+     "volumen": 0.71,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.45,
+     "momento": 0.85,
+     "confirmacion": 1,
+     "futuros": 0.65,
+     "btc": 0
+    },
+    "puntos": 75
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0746,
+    "compras": {
+     "bandas": {
+      "1%": 70040,
+      "2%": 138460,
+      "5%": 216231
+     },
+     "alcance": 7.42,
+     "muro": {
+      "precio": 0.0128,
+      "dist": -4.51,
+      "usdt": 10028,
+      "veces": 4.81,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 70036,
+      "2%": 123357,
+      "5%": 185269
+     },
+     "alcance": 7.75,
+     "muro": {
+      "precio": 0.01445,
+      "dist": 7.8,
+      "usdt": 22357,
+      "veces": 11.78,
+      "lecturas": 1
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "HMSTRUSDT",
+   "base": "HMSTR",
+   "quote": "USDT",
+   "precio": 0.0001432,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.83,
+     "volumen": 1,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.43,
+     "momento": 0.81,
+     "confirmacion": 1,
+     "futuros": 0.86,
+     "btc": 0
+    },
+    "puntos": 79
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.1163,
+    "compras": {
+     "bandas": {
+      "1%": 38598,
+      "2%": 65411,
+      "5%": 548490
+     },
+     "alcance": 7.66,
+     "muro": {
+      "precio": 0.0001388,
+      "dist": -3.17,
+      "usdt": 416526,
+      "veces": 753.76,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 42465,
+      "2%": 63793,
+      "5%": 71579
+     },
+     "alcance": 7.87,
+     "muro": {
+      "precio": 0.0001522,
+      "dist": 6.17,
+      "usdt": 457747,
+      "veces": 2288.74,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "USUALUSDT",
+   "base": "USUAL",
+   "quote": "USDT",
+   "precio": 0.010658,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.86,
+     "volumen": 1,
+     "verdes": 0.8,
+     "obv": 1,
+     "flujo": 0.34,
+     "momento": 0.89,
+     "confirmacion": 0.67,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 66
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0563,
+    "compras": {
+     "bandas": {
+      "1%": 42639,
+      "2%": 50362,
+      "5%": 50362
+     },
+     "alcance": 1.16,
+     "muro": {
+      "precio": 0.010587,
+      "dist": -0.69,
+      "usdt": 2678,
+      "veces": 8.41,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 63186,
+      "2%": 71359,
+      "5%": 71359
+     },
+     "alcance": 1.19,
+     "muro": {
+      "precio": 0.010715,
+      "dist": 0.51,
+      "usdt": 2551,
+      "veces": 5.73,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "PIPPINUSDT",
+   "base": "PIPPIN",
+   "quote": "USDT",
+   "precio": 0.01806,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.83,
+     "volumen": 1,
+     "verdes": 1,
+     "obv": 1,
+     "flujo": 0.45,
+     "momento": 0.86,
+     "confirmacion": 0.67,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 70
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0553,
+    "compras": {
+     "bandas": {
+      "1%": 45326,
+      "2%": 78611,
+      "5%": 190833
+     },
+     "alcance": 5.5,
+     "muro": {
+      "precio": 0.01726,
+      "dist": -4.61,
+      "usdt": 13541,
+      "veces": 8.77,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 33774,
+      "2%": 67556,
+      "5%": 174136
+     },
+     "alcance": 5.56,
+     "muro": {
+      "precio": 0.01859,
+      "dist": 2.74,
+      "usdt": 13195,
+      "veces": 10.79,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "GPSUSDT",
+   "base": "GPS",
+   "quote": "USDT",
+   "precio": 0.008323,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.86,
+     "volumen": 0.28,
+     "verdes": 0.45,
+     "obv": 0.82,
+     "flujo": 0.3,
+     "momento": 0.56,
+     "confirmacion": 0,
+     "futuros": 0.4,
+     "btc": 0
+    },
+    "puntos": 42
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.024,
+    "compras": {
+     "bandas": {
+      "1%": 47061,
+      "2%": 66359,
+      "5%": 66359
+     },
+     "alcance": 1.38,
+     "muro": {
+      "precio": 0.008238,
+      "dist": -1.12,
+      "usdt": 6058,
+      "veces": 12.41,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 41648,
+      "2%": 56164,
+      "5%": 56164
+     },
+     "alcance": 1.55,
+     "muro": {
+      "precio": 0.008437,
+      "dist": 1.27,
+      "usdt": 6122,
+      "veces": 13.16,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "SIRENUSDT",
+   "base": "SIREN",
+   "quote": "USDT",
+   "precio": 0.02609,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.27,
+     "volumen": 0.19,
+     "verdes": 0.24,
+     "obv": 0.75,
+     "flujo": 0.45,
+     "momento": 0.33,
+     "confirmacion": 0.67,
+     "futuros": 0.4,
+     "btc": 0
+    },
+    "puntos": 39
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0383,
+    "compras": {
+     "bandas": {
+      "1%": 17438,
+      "2%": 43177,
+      "5%": 78646
+     },
+     "alcance": 3.97,
+     "muro": {
+      "precio": 0.02555,
+      "dist": -2.09,
+      "usdt": 5890,
+      "veces": 12.93,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 22788,
+      "2%": 44384,
+      "5%": 71756
+     },
+     "alcance": 4.12,
+     "muro": {
+      "precio": 0.02666,
+      "dist": 2.17,
+      "usdt": 3638,
+      "veces": 7.57,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "SKYAIUSDT",
+   "base": "SKYAI",
+   "quote": "USDT",
+   "precio": 0.02747,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.26,
+     "volumen": 0.21,
+     "verdes": 0.64,
+     "obv": 1,
+     "flujo": 0.37,
+     "momento": 0.21,
+     "confirmacion": 0,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 35
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0364,
+    "compras": {
+     "bandas": {
+      "1%": 18963,
+      "2%": 54740,
+      "5%": 87663
+     },
+     "alcance": 4.05,
+     "muro": {
+      "precio": 0.02721,
+      "dist": -1.07,
+      "usdt": 3100,
+      "veces": 3.54,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 33546,
+      "2%": 49508,
+      "5%": 78364
+     },
+     "alcance": 4.67,
+     "muro": {
+      "precio": 0.02842,
+      "dist": 3.33,
+      "usdt": 4392,
+      "veces": 9.2,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "VELVETUSDT",
+   "base": "VELVET",
+   "quote": "USDT",
+   "precio": 0.0641,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.97,
+     "volumen": 1,
+     "verdes": 0,
+     "obv": 0,
+     "flujo": 0.47,
+     "momento": 0.71,
+     "confirmacion": 0.67,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 48
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0156,
+    "compras": {
+     "bandas": {
+      "1%": 19050,
+      "2%": 32442,
+      "5%": 32442
+     },
+     "alcance": 1.63,
+     "muro": {
+      "precio": 0.06319,
+      "dist": -1.49,
+      "usdt": 4172,
+      "veces": 21.01,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 20719,
+      "2%": 36830,
+      "5%": 36830
+     },
+     "alcance": 1.61,
+     "muro": {
+      "precio": 0.06508,
+      "dist": 1.46,
+      "usdt": 5005,
+      "veces": 23.11,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "TACUSDT",
+   "base": "TAC",
+   "quote": "USDT",
+   "precio": 0.001222,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.91,
+     "volumen": 0,
+     "verdes": 0.12,
+     "obv": 0.03,
+     "flujo": 0.39,
+     "momento": 0.64,
+     "confirmacion": 0.67,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 36
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0818,
+    "compras": {
+     "bandas": {
+      "1%": 17287,
+      "2%": 37072,
+      "5%": 99513
+     },
+     "alcance": 8.55,
+     "muro": {
+      "precio": 0.001185,
+      "dist": -3.07,
+      "usdt": 8101,
+      "veces": 7.08,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 22734,
+      "2%": 48364,
+      "5%": 87315
+     },
+     "alcance": 9.12,
+     "muro": {
+      "precio": 0.001239,
+      "dist": 1.35,
+      "usdt": 4185,
+      "veces": 6.9,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "TRADOORUSDT",
+   "base": "TRADOOR",
+   "quote": "USDT",
+   "precio": 0.5923,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.76,
+     "volumen": 0.3,
+     "verdes": 0.7,
+     "obv": 0.85,
+     "flujo": 0.53,
+     "momento": 0.93,
+     "confirmacion": 0.33,
+     "futuros": 0.55,
+     "btc": 0
+    },
+    "puntos": 58
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0957,
+    "compras": {
+     "bandas": {
+      "1%": 16586,
+      "2%": 40882,
+      "5%": 40882
+     },
+     "alcance": 1.87,
+     "muro": {
+      "precio": 0.584,
+      "dist": -1.38,
+      "usdt": 2240,
+      "veces": 8.7,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 70549,
+      "2%": 84094,
+      "5%": 89468
+     },
+     "alcance": 2.35,
+     "muro": {
+      "precio": 0.5959,
+      "dist": 0.62,
+      "usdt": 55136,
+      "veces": 271.01,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AKEUSDT",
+   "base": "AKE",
+   "quote": "USDT",
+   "precio": 0.005952,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0,
+     "volumen": 0.22,
+     "verdes": 0.68,
+     "obv": 0.82,
+     "flujo": 0.42,
+     "momento": 0.34,
+     "confirmacion": 0,
+     "futuros": 0.4,
+     "btc": 0
+    },
+    "puntos": 34
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0223,
+    "compras": {
+     "bandas": {
+      "1%": 17684,
+      "2%": 48134,
+      "5%": 48134
+     },
+     "alcance": 1.67,
+     "muro": {
+      "precio": 0.00588,
+      "dist": -1.63,
+      "usdt": 10975,
+      "veces": 52.84,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 48051,
+      "2%": 73763,
+      "5%": 73763
+     },
+     "alcance": 1.68,
+     "muro": {
+      "precio": 0.006,
+      "dist": 0.38,
+      "usdt": 12077,
+      "veces": 47.76,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "FFUSDT",
+   "base": "FF",
+   "quote": "USDT",
+   "precio": 0.0997,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.86,
+     "volumen": 0.35,
+     "verdes": 0.84,
+     "obv": 0.97,
+     "flujo": 0.5,
+     "momento": 0.52,
+     "confirmacion": 0.33,
+     "futuros": 0.4,
+     "btc": 0
+    },
+    "puntos": 56
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.01,
+    "compras": {
+     "bandas": {
+      "1%": 90814,
+      "2%": 94747,
+      "5%": 94747
+     },
+     "alcance": 1.08,
+     "muro": {
+      "precio": 0.09875,
+      "dist": -0.89,
+      "usdt": 6456,
+      "veces": 10.3,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 75860,
+      "2%": 78143,
+      "5%": 78143
+     },
+     "alcance": 1.07,
+     "muro": {
+      "precio": 0.1006,
+      "dist": 0.97,
+      "usdt": 7133,
+      "veces": 15.1,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "KGENUSDT",
+   "base": "KGEN",
+   "quote": "USDT",
+   "precio": 0.0786,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.67,
+     "volumen": 0,
+     "verdes": 0.05,
+     "obv": 0,
+     "flujo": 0.32,
+     "momento": 0.85,
+     "confirmacion": 0.33,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 29
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0636,
+    "compras": {
+     "bandas": {
+      "1%": 37466,
+      "2%": 51249,
+      "5%": 51249
+     },
+     "alcance": 1.67,
+     "muro": {
+      "precio": 0.07787,
+      "dist": -0.95,
+      "usdt": 4873,
+      "veces": 21.14,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 27156,
+      "2%": 39046,
+      "5%": 39046
+     },
+     "alcance": 1.66,
+     "muro": {
+      "precio": 0.07936,
+      "dist": 0.95,
+      "usdt": 2095,
+      "veces": 6.76,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "BREVUSDT",
+   "base": "BREV",
+   "quote": "USDT",
+   "precio": 0.07038,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.49,
+     "volumen": 1,
+     "verdes": 0.38,
+     "obv": 0.45,
+     "flujo": 0.52,
+     "momento": 0.47,
+     "confirmacion": 0,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 42
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0189,
+    "compras": {
+     "bandas": {
+      "1%": 64810,
+      "2%": 83801,
+      "5%": 83801
+     },
+     "alcance": 1.42,
+     "muro": {
+      "precio": 0.07011,
+      "dist": -0.79,
+      "usdt": 14446,
+      "veces": 25.42,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 60269,
+      "2%": 109857,
+      "5%": 109857
+     },
+     "alcance": 1.44,
+     "muro": {
+      "precio": 0.07144,
+      "dist": 1.1,
+      "usdt": 14661,
+      "veces": 26.27,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "COLLECTUSDT",
+   "base": "COLLECT",
+   "quote": "USDT",
+   "precio": 0.02467,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.94,
+     "volumen": 0.41,
+     "verdes": 0.14,
+     "obv": 0.35,
+     "flujo": 0.43,
+     "momento": 0.47,
+     "confirmacion": 0,
+     "futuros": 0.4,
+     "btc": 0
+    },
+    "puntos": 37
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0811,
+    "compras": {
+     "bandas": {
+      "1%": 19994,
+      "2%": 49566,
+      "5%": 99386
+     },
+     "alcance": 4.9,
+     "muro": {
+      "precio": 0.0242,
+      "dist": -1.91,
+      "usdt": 9977,
+      "veces": 20.79,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 10937,
+      "2%": 27698,
+      "5%": 59767
+     },
+     "alcance": 4.74,
+     "muro": {
+      "precio": 0.02568,
+      "dist": 4.09,
+      "usdt": 4712,
+      "veces": 16.65,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "AIAUSDT",
+   "base": "AIA",
+   "quote": "USDT",
+   "precio": 0.06672,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.77,
+     "volumen": 0.32,
+     "verdes": 0.24,
+     "obv": 0.3,
+     "flujo": 0.47,
+     "momento": 0.49,
+     "confirmacion": 0,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 34
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.1197,
+    "compras": {
+     "bandas": {
+      "1%": 12204,
+      "2%": 33839,
+      "5%": 36551
+     },
+     "alcance": 2.07,
+     "muro": {
+      "precio": 0.066,
+      "dist": -1.3,
+      "usdt": 1816,
+      "veces": 19.12,
+      "lecturas": 1
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 22119,
+      "2%": 36979,
+      "5%": 37366
+     },
+     "alcance": 2.22,
+     "muro": {
+      "precio": 0.0673,
+      "dist": 0.64,
+      "usdt": 2287,
+      "veces": 16.12,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "PHAROSUSDT",
+   "base": "PHAROS",
+   "quote": "USDT",
+   "precio": 0.5392,
+   "hora": "2026-11-21T05:28:14.300Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.67,
+     "volumen": 1,
+     "verdes": 0.93,
+     "obv": 1,
+     "flujo": 0.39,
+     "momento": 0.87,
+     "confirmacion": 0.33,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 63
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0804,
+    "compras": {
+     "bandas": {
+      "1%": 24169,
+      "2%": 64672,
+      "5%": 66995
+     },
+     "alcance": 2.32,
+     "muro": {
+      "precio": 0.5316,
+      "dist": -1.38,
+      "usdt": 5133,
+      "veces": 11.71,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 23326,
+      "2%": 42246,
+      "5%": 50489
+     },
+     "alcance": 2.89,
+     "muro": {
+      "precio": 0.5458,
+      "dist": 1.25,
+      "usdt": 4366,
+      "veces": 11.53,
+      "lecturas": 3
+     }
+    }
+   }
+  }
+ ]
+}
