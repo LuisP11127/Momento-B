@@ -17,6 +17,17 @@ test('con GitHub conectado y nada pendiente, el escaneo termina y sube el día',
   await expect(page.locator('#scan-status')).toContainText('y en GitHub.', { timeout: 15000 });
   expect(await cards(page)).toEqual(['AAA/USDT Spot']);
   expect(Object.keys(fake.gh.files).some((f) => /seguimiento\/\d{4}-\d{2}-\d{2}\.json$/.test(f))).toBe(true);
+  // Los filtros del escaneo, para el escaneo diario de GitHub Actions; solo se vuelven a subir si cambian.
+  expect(JSON.parse(fake.gh.files['docs/seguimiento/escaneo.json'].text)).toEqual({ mercado: 'spot', intervalo: '4h', volumen_min: 0, zona: 'UTC' });
+  const puts = () => fake.gh.log.filter((l) => l === 'PUT docs/seguimiento/escaneo.json').length;
+  expect(puts()).toBe(1);
+  await scan(page, 'spot');
+  await expect(page.locator('#scan-status')).toContainText('y en GitHub.', { timeout: 15000 });
+  expect(puts()).toBe(1);
+  await page.fill('#scan-minvol', '1000000');
+  await scan(page, 'spot');
+  await expect.poll(puts).toBe(2);
+  expect(JSON.parse(fake.gh.files['docs/seguimiento/escaneo.json'].text).volumen_min).toBe(1000000);
 });
 
 test('una red inestable no deja el escaneo colgado', async ({ page, context }) => {

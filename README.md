@@ -143,6 +143,30 @@ hasta dónde llegan y la orden más grande de cada lado (el «muro»), con su di
 tamaño frente a la mediana y en cuántas lecturas seguía ahí. Por ahora no entra en la
 puntuación: cuando haya bastantes días se podrá medir igual que las demás partes.
 
+### Escaneo diario automático
+
+El workflow **Escaneo diario** (`.github/workflows/escaneo-diario.yml`) escanea Binance
+**todos los días a las 16:00 UTC** (11:00 en Lima) desde los servidores de GitHub, sin
+que tengas que abrir la web ni tener el ordenador encendido. Guarda las monedas
+encontradas en el seguimiento igual que la web al pulsar **Escanear** con **Guardar en
+seguimiento**: precio, hora, puntuación de giro (con los pesos en uso) y libro de órdenes.
+Si ese día ya habías escaneado desde la web, solo añade las monedas nuevas (las que ya
+estaban conservan su primer precio). Después vuelve a publicar la web.
+
+- **Filtros**: los del último escaneo de la web guardado en el seguimiento (mercado,
+  velas y volumen mínimo), que la web sube a `docs/seguimiento/escaneo.json` cuando
+  cambian (hace falta tenerla conectada con GitHub). Los filtros que se aplican después
+  del escaneo no cuentan: el seguimiento guarda siempre todas las monedas.
+- **Día**: el de la vela diaria de Binance en tu zona horaria (la del navegador, guardada
+  también en `escaneo.json`): a las 16:00 UTC, en Lima, es el seguimiento del día anterior,
+  como si escanearas a las 11:00 desde la web.
+- El resultado de cada ejecución (las monedas con su puntuación y los avisos) se ve en
+  **Actions → Escaneo diario**. GitHub puede arrancarlo unos minutos tarde. También se
+  lanza a mano con **Run workflow**. Para cambiar la hora, edita la línea `cron` del
+  workflow (en UTC).
+- Usa el mismo código que la web para la puntuación y el libro de órdenes, pasado a Python
+  (`momento_b/giro.py`); una prueba comprueba que los dos dan lo mismo.
+
 **Dónde se guarda.** Siempre en el navegador donde escaneas. Para tenerlo también
 en el repositorio, y verlo igual en el móvil y en el ordenador, pulsa **Guardar
 también en GitHub** y pega una clave de GitHub (*fine-grained token*) creada en
@@ -315,8 +339,9 @@ conexión), el escaneo de ese mercado se detiene y lo dice. El límite de peso s
 comparte entre el escáner, los gráficos y el seguimiento.
 
 Binance bloquea su API desde algunos países y desde servidores en la nube
-(respuesta `451`/`403`). En spot el scanner pasa entonces a
-`data-api.binance.vision`; en futuros lo indica y sigue con el otro mercado.
+(respuesta `451`/`403`). En spot el scanner de Python pasa entonces a
+`data-api.binance.vision` y en futuros a `www.binance.com`, que sirven los mismos datos
+públicos y sí responden desde ahí; si tampoco responden, lo indica y sigue con el otro mercado.
 
 ## Ejecutarlo en GitHub
 
@@ -324,19 +349,20 @@ El workflow `.github/workflows/scanner.yml` pasa los tests y hace un escaneo rea
 
 - se ejecuta solo en cada pull request y en cada cambio en `main`;
 - en **Actions → Scanner → Run workflow** se lanza a mano eligiendo mercado,
-  temporalidad y volumen mínimo. Desde los servidores de GitHub solo funciona spot.
+  temporalidad y volumen mínimo.
 
 El resultado se ve en el resumen de la ejecución, y el informe con los gráficos
 se descarga en **Artifacts → momento-b**.
 
 ### Futuros y los servidores en la nube
 
-Binance rechaza con el error `451` las conexiones que llegan desde servidores en
-la nube: GitHub Actions y GitHub Codespaces en cualquier región. Para spot, el
-scanner cambia solo a `data-api.binance.vision`, la dirección de Binance para
-datos públicos, que sí responde. Para futuros no hay alternativa: usa la
-[versión web](#versión-web-en-el-navegador) o ejecuta `python -m momento_b` en tu
-ordenador.
+Binance rechaza con el error `451` las conexiones a `api.binance.com` y
+`fapi.binance.com` que llegan desde servidores en la nube: GitHub Actions y GitHub
+Codespaces en cualquier región. El scanner de Python cambia entonces solo a otras
+direcciones de Binance con los mismos datos públicos, que sí responden:
+`data-api.binance.vision` para spot y `www.binance.com` para futuros (velas, libro de
+órdenes, interés abierto y financiación). Así funciona el
+[escaneo diario](#escaneo-diario-automático) de GitHub Actions.
 
 Usar un proxy o una VPN para saltarse el bloqueo va contra las condiciones de
 uso de Binance, así que no es una opción recomendada.

@@ -1930,6 +1930,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const done = "Escaneo terminado " + new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + ".";
     status.textContent = done;
     const fecha = opts.track ? recordScan(mercados, opts.interval) : null;
+    if (opts.track && recordScanSettings(opts) && !fecha && ghConfig()) syncPending();
     if (fecha) {
       const saved = done + " Guardado en «Seguimiento " + dayTitle(fecha) + "»";
       status.textContent = saved + (ghConfig() ? "; subiendo a GitHub…" : " de este navegador.");
@@ -2142,6 +2143,38 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     if (state.data) renderGrid();
     renderTracking();
   }
+  // Filtros del último escaneo guardado en el seguimiento: el escaneo diario de GitHub Actions (momento_b/diario.py)
+  // escanea con ellos. Se guardan en docs/seguimiento/escaneo.json, solo cuando cambian.
+  function recordScanSettings(opts) {
+    let zona = "";
+    try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (err) { /* sin zona horaria */ }
+    const settings = { mercado: opts.market, intervalo: opts.interval, volumen_min: opts.minVolume, zona };
+    const text = JSON.stringify(settings);
+    if (store.get("escaneo") === text) return false;
+    store.set("escaneo", text);
+    store.set("escaneo-pendiente", "1");
+    return true;
+  }
+  async function pushScanSettings(cfg) {
+    const path = "/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) + "/contents/docs/seguimiento/escaneo.json";
+    const local = readJSON("escaneo", null);
+    for (let attempt = 0; attempt < 3 && local; attempt++) {
+      const current = await gh(cfg, "GET", path + "?ref=" + encodeURIComponent(cfg.branch));
+      const before = current && current.content ? b64decode(current.content) : null;
+      const text = JSON.stringify(local, null, 1) + "\n";
+      if (text === before) break;
+      const body = { message: "Filtros del escaneo diario", content: b64encode(text), branch: cfg.branch };
+      if (current) body.sha = current.sha;
+      try {
+        await gh(cfg, "PUT", path, body);
+        break;
+      } catch (err) {
+        if (err.status !== 409 && err.status !== 422) throw err;  // otro dispositivo guardó a la vez
+        if (attempt === 2) throw new GhError(409, "otro dispositivo estaba guardando a la vez");
+      }
+    }
+    store.set("escaneo-pendiente", "");
+  }
   async function pushGiro(cfg) {
     const path = "/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) + "/contents/docs/seguimiento/giro.json";
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -2284,7 +2317,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     const pending = Object.values(localDays()).filter((d) => d.pendiente);
     // Sin nada pendiente no se toca «syncing»: antes se quedaba como una promesa ya resuelta y la siguiente
     // llamada (al terminar un escaneo) se llamaba a sí misma sin fin y congelaba la página.
-    if (!pending.length && !store.get("estrellas-pendiente") && !store.get("giro-pendiente")) return Promise.resolve(true);
+    if (!pending.length && !store.get("estrellas-pendiente") && !store.get("giro-pendiente") && !store.get("escaneo-pendiente")) return Promise.resolve(true);
     // .then: el cuerpo empieza cuando «syncing» ya está asignado, así su finally siempre lo deja en null.
     syncing = Promise.resolve().then(async () => {
       track.busy = true;
@@ -2305,6 +2338,7 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
         }
         if (store.get("estrellas-pendiente")) await pushStars(cfg);
         if (store.get("giro-pendiente")) await pushGiro(cfg);
+        if (store.get("escaneo-pendiente")) await pushScanSettings(cfg);
         track.sync = "Subido a las " + timeOf(new Date().toISOString()) + ".";
         return true;
       } catch (err) {
@@ -3055,11 +3089,13 @@ body.dragging .wrap { outline: 2px dashed var(--accent); outline-offset: -8px; }
     else if (track.sync) box.append(h("span", { text: track.sync }));
     const pending = Object.values(localDays()).filter((d) => d.pendiente).length;
     const starsPending = !!store.get("estrellas-pendiente"), giroPending = !!store.get("giro-pendiente");
-    if ((pending || starsPending || giroPending) && !track.busy) {
+    const settingsPending = !!store.get("escaneo-pendiente");
+    if ((pending || starsPending || giroPending || settingsPending) && !track.busy) {
       const parts = [];
       if (pending) parts.push(pending === 1 ? "el día pendiente" : pending + " días pendientes");
       if (starsPending) parts.push("las estrellas");
       if (giroPending) parts.push("los pesos del giro");
+      if (settingsPending) parts.push("los filtros del escaneo");
       const list = parts.length > 1 ? parts.slice(0, -1).join(", ") + " y " + parts[parts.length - 1] : parts[0];
       const retry = h("button", { class: "btn small", type: "button", text: "Subir " + list });
       retry.addEventListener("click", () => syncPending());

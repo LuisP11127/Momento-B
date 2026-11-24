@@ -1,0 +1,70 @@
+name: Escaneo diario
+
+# Escanea Binance cada día a la misma hora y guarda las monedas encontradas en el seguimiento
+# (docs/seguimiento/AAAA-MM-DD.json), con su puntuación de giro y su libro de órdenes, igual que la web al pulsar
+# «Escanear» con «Guardar en seguimiento». Usa los filtros del último escaneo de la web (docs/seguimiento/escaneo.json).
+# Después vuelve a publicar la web para que salgan en «Seguimiento».
+# GitHub puede arrancarlo unos minutos tarde. También se lanza a mano en Actions → Escaneo diario → Run workflow.
+on:
+  schedule:
+    - cron: "0 16 * * *"  # 16:00 UTC (11:00 en Lima)
+  workflow_dispatch:
+
+permissions:
+  contents: write  # para guardar el día de seguimiento
+  actions: write   # para volver a publicar la web
+
+concurrency:
+  group: escaneo-diario
+  cancel-in-progress: false
+
+jobs:
+  escanear:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Escanear
+        run: python -m momento_b.diario escanear --seguimiento docs/seguimiento --salida "$RUNNER_TEMP/dia.json" --resumen "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar el día en el seguimiento
+        id: guardar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Si la web guardó ese día mientras tanto, se parte de lo que hay en GitHub y se añaden las monedas nuevas.
+          for attempt in 1 2 3 4; do
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            python -m momento_b.diario unir "$RUNNER_TEMP/dia.json" --seguimiento docs/seguimiento
+            git add docs/seguimiento
+            if git diff --cached --quiet; then
+              echo "Sin monedas nuevas: no hay nada que guardar."
+              echo "cambios=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            file=$(git diff --cached --name-only | head -n 1)
+            total=$(python -c "import json,sys; print(len(json.load(open(sys.argv[1]))['monedas']))" "$file")
+            git commit -q -m "Seguimiento $(basename "$file" .json) ($total monedas, escaneo diario)"
+            if git push -q origin HEAD:main; then
+              echo "cambios=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "::error::No se pudo subir el día de seguimiento a GitHub."
+          exit 1
+
+      # Lo que sube este workflow no lanza el workflow «Web» por sí solo: se lanza aquí.
+      - name: Volver a publicar la web
+        if: steps.guardar.outputs.cambios == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run web.yml --ref main --repo "${{ github.repository }}"
