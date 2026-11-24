@@ -32,6 +32,7 @@ class Market:
     exchange_info_path: str
     klines_path: str
     ticker_path: str
+    depth_path: str
     default_weight_limit: int
     exchange_info_weight: int
     ticker_weight: int
@@ -58,6 +59,7 @@ SPOT = Market(
     exchange_info_path="/api/v3/exchangeInfo",
     klines_path="/api/v3/klines",
     ticker_path="/api/v3/ticker/24hr",
+    depth_path="/api/v3/depth",
     default_weight_limit=6000,
     exchange_info_weight=20,
     ticker_weight=80,
@@ -74,11 +76,15 @@ FUTURES = Market(
     exchange_info_path="/fapi/v1/exchangeInfo",
     klines_path="/fapi/v1/klines",
     ticker_path="/fapi/v1/ticker/24hr",
+    depth_path="/fapi/v1/depth",
     default_weight_limit=2400,
     exchange_info_weight=1,
     ticker_weight=40,
     max_klines=1500,
     klines_weight=_futures_klines_weight,
+    # fapi.binance.com rechaza los servidores en la nube (451); www.binance.com sirve los mismos datos
+    # públicos de futuros (/fapi/… y /futures/data/…) y sí responde desde ahí, por ejemplo desde GitHub Actions.
+    fallback_urls=("https://www.binance.com",),
 )
 
 MARKETS = {SPOT.key: SPOT, FUTURES.key: FUTURES}
@@ -196,6 +202,10 @@ class BinanceClient:
                 continue
             raise BinanceError(f"{resp.status_code} en {path} {params or ''}: {resp.text[:200]}")
         raise BinanceError(f"{path} {params or ''} falló tras {self.max_retries + 1} intentos: {last_error}")
+
+    def get(self, path: str, params: Optional[dict] = None, weight: int = 1) -> Any:
+        """Cualquier otro endpoint público del mercado (libro de órdenes, interés abierto...)."""
+        return self._get(path, params, weight)
 
     def exchange_info(self) -> dict:
         info = self._get(self.market.exchange_info_path, weight=self.market.exchange_info_weight)

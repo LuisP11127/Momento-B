@@ -29,6 +29,7 @@ COIN_FIELDS = ("mercado", "simbolo", "base", "quote", "precio", "hora", "interva
 OPTIONAL_COIN_FIELDS = ("giro",)
 STARS_FILE = "estrellas.json"  # monedas con estrella, en la misma carpeta que los días de seguimiento
 GIRO_FILE = "giro.json"  # pesos del indicador de giro
+SETTINGS_FILE = "escaneo.json"  # filtros del último escaneo de la web, para el escaneo diario
 # «AAAA-MM-DD|mercado:SÍMBOLO» (la estrella de un día); sin día es el formato antiguo, que la web convierte.
 STAR_KEY_RE = re.compile(r"^(\d{4}-\d{2}-\d{2}\|)?[a-z]+:\S+$")
 ICON_PATH = Path(__file__).with_name("icono.png")
@@ -41,7 +42,7 @@ def collect_tracking(folder: Path) -> list[dict]:
     """
     days = {}
     for path in sorted(Path(folder).glob("*.json")):
-        if path.name in (STARS_FILE, GIRO_FILE):
+        if path.name in (STARS_FILE, GIRO_FILE, SETTINGS_FILE):
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))

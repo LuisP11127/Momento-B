@@ -497,7 +497,23 @@ def test_spot_falls_back_to_data_api_on_451(monkeypatch):
     assert client.base_url == "https://data-api.binance.vision"
 
 
-def test_futures_and_explicit_urls_do_not_fall_back(monkeypatch):
+def test_futures_fall_back_to_www_binance_on_451(monkeypatch):
+    from momento_b.binance import BinanceClient
+
+    client = BinanceClient(FUTURES)
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(url)
+        return StatusResponse(451) if url.startswith("https://fapi.binance.com") else StatusResponse(200, {"ok": 1})
+
+    monkeypatch.setattr(client.session, "get", fake_get)
+    assert client.get("/futures/data/openInterestHist") == {"ok": 1}
+    assert calls == ["https://fapi.binance.com/futures/data/openInterestHist",
+                     "https://www.binance.com/futures/data/openInterestHist"]
+
+
+def test_blocked_everywhere_and_explicit_urls_do_not_fall_back(monkeypatch):
     from momento_b.binance import BinanceClient
 
     for client in (BinanceClient(FUTURES), BinanceClient(SPOT, base_url="https://api.binance.com")):
@@ -552,6 +568,7 @@ def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
     (tmp_path / "README.md").write_text("no es un día", encoding="utf-8")
     (tmp_path / "estrellas.json").write_text(json.dumps({"estrellas": {}}), encoding="utf-8")  # no es un día
     (tmp_path / "giro.json").write_text(json.dumps({"pesos": {}}), encoding="utf-8")  # tampoco
+    (tmp_path / "escaneo.json").write_text(json.dumps({"mercado": "ambos"}), encoding="utf-8")  # tampoco
 
     days = web.collect_tracking(tmp_path)
 
@@ -560,7 +577,7 @@ def test_collect_tracking_orders_days_and_skips_bad_files(tmp_path, capsys):
     assert len(days[0]["monedas"]) == 1
     out = capsys.readouterr().out
     assert "roto.json" in out and "otro.json" in out
-    assert "estrellas.json" not in out and "giro.json" not in out
+    assert "estrellas.json" not in out and "giro.json" not in out and "escaneo.json" not in out
     assert web.collect_tracking(tmp_path / "no-existe") == []
 
 
