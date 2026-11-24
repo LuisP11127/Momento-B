@@ -50,7 +50,8 @@ jobs:
 
   # La web en Chromium, con Binance y GitHub simulados (tests/web).
   web:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 no tiene Chromium para Ubuntu 26.04 (el ubuntu-latest actual): se fija la 24.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
