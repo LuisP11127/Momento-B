@@ -2017,6 +2017,64 @@
      }
     }
    }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "KERNELUSDT",
+   "base": "KERNEL",
+   "quote": "USDT",
+   "precio": 0.04315,
+   "hora": "2026-11-25T23:59:47.662Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.39,
+     "volumen": 0.2,
+     "verdes": 0.95,
+     "obv": 1,
+     "flujo": 0.35,
+     "momento": 0.52,
+     "confirmacion": 1,
+     "futuros": 0.65,
+     "btc": 0
+    },
+    "puntos": 58
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0232,
+    "compras": {
+     "bandas": {
+      "1%": 79566,
+      "2%": 140113,
+      "5%": 170252
+     },
+     "alcance": 3.09,
+     "muro": {
+      "precio": 0.04235,
+      "dist": -1.87,
+      "usdt": 9157,
+      "veces": 5.55,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 78182,
+      "2%": 127607,
+      "5%": 141595
+     },
+     "alcance": 2.84,
+     "muro": {
+      "precio": 0.04393,
+      "dist": 1.8,
+      "usdt": 7880,
+      "veces": 6.28,
+      "lecturas": 3
+     }
+    }
+   }
   }
  ]
 }
