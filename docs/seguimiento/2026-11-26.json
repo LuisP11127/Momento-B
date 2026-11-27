@@ -2306,6 +2306,180 @@
      }
     }
    }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "ESPORTSUSDT",
+   "base": "ESPORTS",
+   "quote": "USDT",
+   "precio": 0.009965,
+   "hora": "2026-11-27T23:55:08.160Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.19,
+     "volumen": 0,
+     "verdes": 0.47,
+     "obv": 0.73,
+     "flujo": 0.38,
+     "momento": 0.55,
+     "confirmacion": 0.67,
+     "futuros": 0.55,
+     "btc": 0
+    },
+    "puntos": 41
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0535,
+    "compras": {
+     "bandas": {
+      "1%": 22355,
+      "2%": 26327,
+      "5%": 26327
+     },
+     "alcance": 1.13,
+     "muro": {
+      "precio": 0.009885,
+      "dist": -0.78,
+      "usdt": 3830,
+      "veces": 19.55,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 18008,
+      "2%": 20530,
+      "5%": 20530
+     },
+     "alcance": 1.21,
+     "muro": {
+      "precio": 0.010013,
+      "dist": 0.5,
+      "usdt": 991,
+      "veces": 5.22,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "TRADOORUSDT",
+   "base": "TRADOOR",
+   "quote": "USDT",
+   "precio": 0.6136,
+   "hora": "2026-11-27T23:55:08.160Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.89,
+     "volumen": 0.56,
+     "verdes": 0.86,
+     "obv": 1,
+     "flujo": 0.13,
+     "momento": 0.49,
+     "confirmacion": 0.33,
+     "futuros": 0.25,
+     "btc": 0
+    },
+    "puntos": 51
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0434,
+    "compras": {
+     "bandas": {
+      "1%": 17080,
+      "2%": 42941,
+      "5%": 42941
+     },
+     "alcance": 1.81,
+     "muro": {
+      "precio": 0.6054,
+      "dist": -1.38,
+      "usdt": 2795,
+      "veces": 9.85,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 12637,
+      "2%": 29774,
+      "5%": 29774
+     },
+     "alcance": 1.93,
+     "muro": {
+      "precio": 0.6252,
+      "dist": 1.84,
+      "usdt": 1511,
+      "veces": 7.53,
+      "lecturas": 3
+     }
+    }
+   }
+  },
+  {
+   "mercado": "futures",
+   "simbolo": "BTWUSDT",
+   "base": "BTW",
+   "quote": "USDT",
+   "precio": 1.1875,
+   "hora": "2026-11-27T23:55:08.160Z",
+   "intervalo": "1d",
+   "giro": {
+    "v": 1,
+    "partes": {
+     "estructura": 0.67,
+     "volumen": 0.37,
+     "verdes": 1,
+     "obv": 0.82,
+     "flujo": 0.46,
+     "momento": 1,
+     "confirmacion": 1,
+     "futuros": 0.85,
+     "btc": 0
+    },
+    "puntos": 71
+   },
+   "libro": {
+    "lecturas": 3,
+    "spread": 0.0084,
+    "compras": {
+     "bandas": {
+      "1%": 68844,
+      "2%": 68844,
+      "5%": 68844
+     },
+     "alcance": 0.85,
+     "muro": {
+      "precio": 1.18,
+      "dist": -0.64,
+      "usdt": 6646,
+      "veces": 18.4,
+      "lecturas": 3
+     }
+    },
+    "ventas": {
+     "bandas": {
+      "1%": 74121,
+      "2%": 74121,
+      "5%": 74121
+     },
+     "alcance": 0.84,
+     "muro": {
+      "precio": 1.189,
+      "dist": 0.12,
+      "usdt": 3579,
+      "veces": 9.76,
+      "lecturas": 3
+     }
+    }
+   }
   }
  ]
 }
