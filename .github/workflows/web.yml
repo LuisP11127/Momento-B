@@ -38,13 +38,13 @@ jobs:
             echo "::notice title=Web sin publicar::Activa GitHub Pages con «Source: GitHub Actions» (ver README)."
           fi
 
-  deploy:
+  # La web se prepara en un trabajo y se publica en otro, como recomienda GitHub: así el trabajo que publica
+  # empieza cuando el archivo de la web ya está registrado. Antes, en un mismo trabajo, a veces no lo encontraba
+  # («No artifacts named "github-pages" were found») y la publicación fallaba aunque se hubiera subido.
+  build:
     needs: check
     if: needs.check.outputs.enabled == 'true'
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -52,8 +52,16 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt
       - run: python -m momento_b.web site --bstocks --seguimiento docs/seguimiento
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
